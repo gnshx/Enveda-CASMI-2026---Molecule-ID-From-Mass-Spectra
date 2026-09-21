@@ -1,0 +1,49 @@
+experiment_id: baseline_v001
+model_type: spectral_retrieval
+description: "Cosine and modified-cosine spectral retrieval with per-molecule multi-spectrum aggregation"
+
+preprocessing:
+  precursor_buffer_da: 2.0
+  intensity_floor: 0.005
+  top_k_peaks: 128
+  sqrt_transform: true
+
+retrieval:
+  peak_mz_tolerance_da: 0.05
+  candidate_precursor_mz_window_da: 2.0
+  min_matched_peaks: 3
+  top_k_per_spectrum: 100
+  scoring_methods:
+    - cosine
+    - modified_cosine
+
+aggregation:
+  method: multi_spectrum_evidence
+  features:
+    - cosine_max
+    - cosine_mean
+    - modified_cosine_max
+    - n_supporting_spectra
+    - ce_stratified_consistency
+
+validation:
+  dataset: "enveda-np-examples"
+  instrument: "timsTOF"
+  n_molecules: 250
+  leakage_prevention: "enveda-np-examples withheld from reference index"
+
+data:
+  train_parquet: "/home/dlcv/Enveda-CASMI-2026/data/train.parquet"
+  test_parquet: "/home/dlcv/Enveda-CASMI-2026/data/test.parquet"
+  indexed_libraries:
+    - pluskal_ms2
+    - riken
+    - gnps
+    - massbank
+    - mona
+    - msdial
+    - spectraverse
+    - drug_plus
+    - masaryk
+  excluded_libraries:
+    - enveda-180

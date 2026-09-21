@@ -1,0 +1,18 @@
+{
+  "mrr_at_25": 0.34539005602240896,
+  "class1_mrr_at_25": 0.6907801120448179,
+  "class2_mrr_at_25": 0.0,
+  "n_val_molecules": 250,
+  "n_val_spectra": 1183,
+  "recall_at_1": 0.32,
+  "recall_at_5": 0.372,
+  "recall_at_10": 0.38,
+  "recall_at_25": 0.388,
+  "recall_at_50": 0.392,
+  "recall_at_100": 0.392,
+  "recall_at_500": 0.392,
+  "class1_recall_at_25": 0.776,
+  "class2_recall_at_25": 0.0,
+  "retrieval_failure_rate": 0.608,
+  "ranking_failure_rate": 0.004
+}
