@@ -1,0 +1,31 @@
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# Virtual environments
+.env
+.venv/
+env/
+venv/
+
+# Large datasets & raw competition files
+data/
+*.zip
+*.tar.gz
+
+# Model checkpoints & heavy weights (>100MB limit on GitHub)
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# Large database & binary parquet files
+*.parquet
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

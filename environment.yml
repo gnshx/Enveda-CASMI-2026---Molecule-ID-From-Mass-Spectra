@@ -1,0 +1,31 @@
+name: casmi2026
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - pytorch>=2.2
+  - numpy
+  - pandas
+  - polars
+  - pyarrow
+  - scipy
+  - scikit-learn
+  - lightgbm
+  - xgboost
+  - optuna
+  - faiss-cpu
+  - rdkit=2026.03.3  # PINNED — competition metric uses exactly this version
+  - matchms
+  - matplotlib
+  - seaborn
+  - tqdm
+  - jupyter
+  - jupyterlab
+  - sqlalchemy
+  - pip:
+      - dreams-ms
+      - ms2ml
+      - umap-learn
+      - plotly
+      - kaggle
