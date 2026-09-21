@@ -27,6 +27,13 @@ import pandas as pd
 import pyarrow.parquet as pq
 import torch
 import torch.nn as nn
+# ── Ensure RDKit is installed ────────────────────────────────────────────────
+try:
+    import rdkit
+except ImportError:
+    print("Installing RDKit...")
+    os.system("pip install rdkit -q")
+
 from rdkit import Chem
 from rdkit.Chem import AllChem, MACCSkeys
 
@@ -142,13 +149,18 @@ def fast_tanimoto_batch(query_fp: np.ndarray, cand_fps: np.ndarray) -> np.ndarra
     return dots / denom
 
 ADDUCT_SHIFTS = {
+    # Positive mode
     '[M+H]+': -1.007276,
-    '[M-H]-': +1.007276,
-    '[M+Na]+': -22.989218,
     '[M+NH4]+': -18.033823,
+    '[M+Na]+': -22.989218,
     '[M+K]+': -38.963158,
+    '[M-H2O+H]+': +17.003289,
+    '[M-2H2O+H]+': +35.013854,
+    # Negative mode
+    '[M-H]-': +1.007276,
     '[M+Cl]-': -34.969402,
-    '[M+CH2O2-H]-': -44.998201,
+    '[M+CH2O2-H]-': -44.997655,
+    '[M-H2O-H]-': +19.017841,
 }
 
 def extract_float(val, default=30.0) -> float:
@@ -292,6 +304,7 @@ def run_kaggle_inference():
                 final_smiles.append(s)
 
         # Backfill if < 25
+        # Backfill if < 25 from candidates or common natural products
         if len(final_smiles) < 25:
             for s in cand_pool:
                 if s not in seen:
@@ -299,6 +312,21 @@ def run_kaggle_inference():
                     final_smiles.append(s)
                 if len(final_smiles) >= 25:
                     break
+
+        DEFAULT_FALLBACK = [
+            "CCO", "CC(=O)O", "C1CCCCC1", "c1ccccc1", "Oc1ccccc1",
+            "CC(C)O", "CC(=O)C", "c1ccncc1", "COC(=O)C", "CCNCC",
+            "NCCO", "CCOCC", "c1cnccn1", "c1ncccn1", "c1ncc[nH]1",
+            "C1CCOCC1", "C1CCNCC1", "CC(=O)N", "CSC", "CS(=O)(=O)C",
+            "c1ccc2ccccc2c1", "OC(=O)c1ccccc1", "c1ccc(O)cc1", "c1ccc(N)cc1", "c1ccoc1"
+        ]
+        fb_idx = 0
+        while len(final_smiles) < 25 and fb_idx < len(DEFAULT_FALLBACK):
+            s = DEFAULT_FALLBACK[fb_idx]
+            if s not in seen:
+                seen.add(s)
+                final_smiles.append(s)
+            fb_idx += 1
 
         final_25 = final_smiles[:25]
         submission_rows.append({"molecule_id": mol_id, "smiles": ";".join(final_25)})
@@ -311,7 +339,8 @@ def run_kaggle_inference():
     sub_df.to_csv(OUTPUT_CSV, index=False)
     print(f"\n✓ Successfully saved submission to: {OUTPUT_CSV}")
     print(f"  Row count: {len(sub_df)}")
-    assert len(sub_df) == 400, "Must be exactly 400 rows!"
+    assert len(sub_df) == len(molecules), f"Row count ({len(sub_df)}) must match molecule count ({len(molecules)})!"
+    assert len(sub_df) > 0, "Submission cannot be empty!"
     print("✓ All checks passed! Ready to submit.")
 
 if __name__ == "__main__":
