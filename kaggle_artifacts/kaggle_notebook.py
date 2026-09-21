@@ -27,12 +27,17 @@ import pandas as pd
 import pyarrow.parquet as pq
 import torch
 import torch.nn as nn
-# ── Ensure RDKit is installed ────────────────────────────────────────────────
+# ── Ensure RDKit is installed (offline wheel or pip) ─────────────────────────
 try:
     import rdkit
 except ImportError:
-    print("Installing RDKit...")
-    os.system("pip install rdkit -q")
+    whls = glob.glob("/kaggle/input/**/rdkit*.whl", recursive=True)
+    if whls:
+        print(f"Installing RDKit offline from {whls[0]}...")
+        os.system(f"pip install --no-index {whls[0]} -q")
+    else:
+        print("Installing RDKit via pip...")
+        os.system("pip install rdkit -q")
 
 from rdkit import Chem
 from rdkit.Chem import AllChem, MACCSkeys
