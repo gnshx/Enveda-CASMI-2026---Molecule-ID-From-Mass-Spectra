@@ -330,9 +330,10 @@ def run_kaggle_inference_v2():
                 if len(final_smiles) >= 25:
                     break
 
-        row = {"molecule_id": mol_id}
-        for rank in range(1, 26):
-            row[f"smiles_{rank}"] = final_smiles[rank - 1]
+        row = {
+            "molecule_id": mol_id,
+            "smiles": ";".join(final_smiles[:25])
+        }
         submission_rows.append(row)
 
         if (idx + 1) % 50 == 0 or idx + 1 == len(molecules):
