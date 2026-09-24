@@ -1,21 +1,18 @@
 """
-================================================================================
-Kaggle Submission Notebook for Enveda CASMI 2026: Molecule ID from Mass Spectra
-Pipeline: Candidate Neutral Mass Retrieval + FPNet Deep Network (29.7M params) + Gaussian ppm penalty
-Personal Best: 0.145 (Version 10)
-================================================================================
-Instructions:
-1. In your Kaggle Notebook (e.g. nukaladevisaiganesh/gt-first):
-   - Make sure inputs are attached:
-       * casmi-fpnet-artifacts (contains candidate_db.parquet & fpnet_weights.pt)
-       * offiline (contains rdkit wheel)
-       * enveda-CASMI26-molecule-id-mass-spectra (contains test.parquet)
-   - Enable GPU accelerator (T4 x2 or P100).
-   - Set "Internet: Off".
-2. Paste this entire script into a single notebook code cell.
-3. Click "Run All", then "Save Version" -> "Quick Save" or "Run & Save All".
-4. Submit the generated submission.csv!
-================================================================================
+ranking/submission_v16_clean_pb.py
+
+Direct restoration of Personal Best Version 10 (Leaderboard: 0.145).
+Fixes the 1-bit MACCS offset bug and fragmentation noise that degraded V14 & V15 to 0.023.
+
+Pipeline:
+  1. FPNet (2048 Morgan + 166 MACCS bits) neural prediction per spectrum.
+  2. Average predicted fingerprint across multiple collision energies.
+  3. Precursor neutral mass candidate filtering with progressive ppm windows (±15, ±35, ±70 ppm).
+  4. Exact MACCS bit indexing (arr[2048 + b] = 1.0 for b in GetOnBits()) strictly matching model training.
+  5. Fast batch Tanimoto similarity.
+  6. Calibrated Gaussian ppm mass penalty: combined = tanimoto * (0.75 + 0.25 * mass_penalties).
+  7. Top 25 deduplicated ranking per molecule.
+  8. Strictly generates 400 rows, 2 columns ('molecule_id', 'smiles').
 """
 
 import os
