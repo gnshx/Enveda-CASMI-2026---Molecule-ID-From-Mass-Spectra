@@ -32,19 +32,25 @@ print(f"[SUCCESS] RDKit version: {rdkit.__version__}")
 
 def find(name):
     hits = sorted(glob.glob(f'/kaggle/input/**/{name}', recursive=True), key=len)
-    if not hits: raise FileNotFoundError(f"Could not find input file: {name}")
+    if not hits:
+        hits = sorted(glob.glob(f'**/{name}', recursive=True), key=len)
+    if not hits:
+        raise FileNotFoundError(f"Could not find input file: {name}")
     return hits[0]
 
 COMP = os.path.dirname(find('test.parquet'))
 print(f"[INFO] Competition path: {COMP}")
 print(f"       Available files: {os.listdir(COMP)}")
 
-os.chdir('/kaggle/working')
-sys.path.insert(0, '/kaggle/working')
+if os.path.exists('/kaggle/working'):
+    os.chdir('/kaggle/working')
+    sys.path.insert(0, '/kaggle/working')
+else:
+    sys.path.insert(0, '.')
 
 # ── 2. Module: pv.py (Spectral Kernels, Adducts, MetFrag-lite) ─────────────────
 with open('pv.py', 'w') as f:
-    f.write('''"""pv.py — Spectral entropy search, neutral loss shift, and MetFrag-lite."""
+    f.write(r'''"""pv.py — Spectral entropy search, neutral loss shift, and MetFrag-lite."""
 import math
 import numpy as np
 from numba import njit, prange
@@ -359,7 +365,7 @@ def explain_score(frag_mass, peak_mz, peak_int, mode=1.0, tol=0.01, h_shifts=(-2
 
 # ── 3. Module: pv_fp.py (Dual MS2 Transformer Neural Net) ─────────────────────
 with open('pv_fp.py', 'w') as f:
-    f.write('''"""pv_fp.py — Spectrum -> fingerprint model (FPNet MS2 Transformer)."""
+    f.write(r'''"""pv_fp.py — Spectrum -> fingerprint model (FPNet MS2 Transformer)."""
 import math
 import numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
@@ -474,7 +480,7 @@ def load_fp_models(paths, dev):
         ck = torch.load(pth, map_location='cpu', weights_only=False)
         net = FPNet(ck['nbits'], d=ck['d'], layers=ck['layers']).to(dev).eval()
         net.load_state_dict(ck['model'])
-        (merged if 'merged' in str(pth).replace('\\', '/').split('/')[-1] else single).append(net)
+        (merged if 'merged' in os.path.basename(str(pth)) else single).append(net)
         nbits = ck['nbits']
     return single, merged, nbits
 
@@ -527,7 +533,7 @@ def molecule_logits(models, specs, prec, adduct, instr, ce, mode):
 
 # ── 4. Module: regio_generator.py (ENHANCED 5 & 6-Ring Isomer Generator) ──────
 with open('regio_generator.py', 'w') as f:
-    f.write('''"""regio_generator.py — Enhanced Multi-Channel Constitutional Isomer Generator."""
+    f.write(r'''"""regio_generator.py — Enhanced Multi-Channel Constitutional Isomer Generator."""
 import itertools
 from rdkit import Chem, RDLogger
 from rdkit.Chem import rdMolDescriptors, AllChem
@@ -662,7 +668,7 @@ def generate_constitutional_isomers(smi: str, max_variants: int = 30):
 
 # ── 5. Module: casmi_engine.py (Two-Ranker Engine & Gated Zero-CCO Post-Processor)
 with open('casmi_engine.py', 'w') as f:
-    f.write('''"""casmi_engine.py — SOTA Two-Ranker Engine with Zero-CCO Bayes Post-Processor."""
+    f.write(r'''"""casmi_engine.py — SOTA Two-Ranker Engine with Zero-CCO Bayes Post-Processor."""
 import os, sys, glob, time, pickle, math
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
 import numpy as np, pandas as pd, pyarrow.parquet as pq, pyarrow as pa
@@ -679,7 +685,7 @@ class RANK:
 
 T0 = time.time()
 LOCAL = os.environ.get("CASMI_LOCAL") == "1"
-ROOTS = [r"C:\\Users\\HW-LEE\\Desktop\\CASMI"] if LOCAL else ["/kaggle/input"]
+ROOTS = ["/kaggle/input", "."]
 
 def find(name):
     for root in ROOTS:
