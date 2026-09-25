@@ -30,13 +30,31 @@ else:
 import rdkit
 print(f"[SUCCESS] RDKit version: {rdkit.__version__}")
 
-def find(name):
+def find(name, optional=False):
     hits = sorted(glob.glob(f'/kaggle/input/**/{name}', recursive=True), key=len)
     if not hits:
         hits = sorted(glob.glob(f'**/{name}', recursive=True), key=len)
     if not hits:
-        raise FileNotFoundError(f"Could not find input file: {name}")
-    return hits[0]
+        for root in ['/kaggle/input', '.']:
+            for dirpath, _, filenames in os.walk(root):
+                for f in filenames:
+                    if f.lower() == name.lower() or name.lower() in f.lower():
+                        hits.append(os.path.join(dirpath, f))
+    if hits:
+        return sorted(hits, key=len)[0]
+    if optional:
+        return None
+    print(f"\n[ERROR] Required input file '{name}' was not found!")
+    print("[DIAGNOSTIC] All files currently attached under /kaggle/input:")
+    all_files = []
+    for root, _, files in os.walk('/kaggle/input'):
+        for f in files:
+            all_files.append(os.path.join(root, f))
+    for f in sorted(all_files)[:30]:
+        print(f"  • {f}")
+    if len(all_files) > 30:
+        print(f"  ... and {len(all_files) - 30} more files.")
+    raise FileNotFoundError(f"Could not find input file: {name}")
 
 COMP = os.path.dirname(find('test.parquet'))
 print(f"[INFO] Competition path: {COMP}")
@@ -687,10 +705,16 @@ T0 = time.time()
 LOCAL = os.environ.get("CASMI_LOCAL") == "1"
 ROOTS = ["/kaggle/input", "."]
 
-def find(name):
+def find(name, optional=False):
     for root in ROOTS:
         hits = glob.glob(os.path.join(root, "**", name), recursive=True)
         if hits: return sorted(hits, key=len)[0]
+    for root in ROOTS:
+        for dirpath, _, filenames in os.walk(root):
+            for f in filenames:
+                if f.lower() == name.lower() or name.lower() in f.lower():
+                    return os.path.join(dirpath, f)
+    if optional: return None
     raise FileNotFoundError(name)
 
 def log(msg):
@@ -1168,14 +1192,24 @@ def main(test_path, train_path, sample_path, our_rank_path, pv_rank_path, fp_mod
     mols, recs = compute_channels(L, I, (single, merged, dev), te)
     del L, I
     compute_frag(recs, workers)
-    ours, blocks = fit_rankers(our_rank_path)
-    s_ours = score_molecules(recs, ours, blocks, use_fp=False)
-    del ours
+    s_ours = None
+    if our_rank_path and os.path.exists(our_rank_path):
+        ours, blocks = fit_rankers(our_rank_path)
+        s_ours = score_molecules(recs, ours, blocks, use_fp=False)
+        del ours
+    else:
+        log("Ranker B (simulated rows) not available; running with SOTA Ranker A.")
+
     pvr, nfeat = fit_pv_rankers(pv_rank_path)
     s_pv = score_molecules(recs, pvr, ["base"], use_fp=True)
     del pvr
-    subs = make_submissions(mols, recs, {"blend": blend_scores(s_pv, s_ours, w_pv), "pv": s_pv, "ours": s_ours},
-                            sample_path, workers)
+
+    if s_ours is not None:
+        scores_dict = {"blend": blend_scores(s_pv, s_ours, w_pv), "pv": s_pv, "ours": s_ours}
+    else:
+        scores_dict = {"blend": s_pv, "pv": s_pv}
+
+    subs = make_submissions(mols, recs, scores_dict, sample_path, workers)
     log("submissions ready")
     return subs, recs
 ''')
@@ -1190,10 +1224,14 @@ E.RANK.SEEDS = (0, 1)
 fp_models = sorted(glob.glob('/kaggle/input/**/fp_*.pt', recursive=True))
 print(f"[INFO] Found {len(fp_models)} FPNet model checkpoints: {fp_models}")
 
-sim_rank_path = find('sim_rank_rows_nofp.npz')
-rank_train_path = find('rank_train.npz')
+sim_rank_path = find('sim_rank_rows_nofp.npz', optional=True)
+rank_train_path = find('rank_train.npz', optional=False)
 print(f"[INFO] Ranker A train data: {rank_train_path}")
-print(f"[INFO] Ranker B train data: {sim_rank_path}")
+if sim_rank_path:
+    print(f"[INFO] Ranker B train data: {sim_rank_path}")
+else:
+    print("[NOTICE] 'sim_rank_rows_nofp.npz' not found. Using Ranker A (0.328+) + Enhanced Regioisomer Bayes Engine.")
+    print("         (To unlock full 0.358+ two-ranker blend, add dataset 'CASMI26 Simulated Ranker Rows').")
 
 subs, recs = E.main(
     os.path.join(COMP, 'test.parquet'),
@@ -1207,14 +1245,16 @@ subs, recs = E.main(
 )
 
 subs['blend'].to_csv('submission.csv', index=False)
-subs['pv'].to_csv('submission_pv.csv', index=False)
-subs['ours'].to_csv('submission_ours.csv', index=False)
+if 'pv' in subs:
+    subs['pv'].to_csv('submission_pv.csv', index=False)
+if 'ours' in subs:
+    subs['ours'].to_csv('submission_ours.csv', index=False)
 
 print(f"\n[SUCCESS] Completed pipeline execution in {(time.time() - T_START) / 60:.1f} mins.")
 
 # ── 7. Verification & Audit ───────────────────────────────────────────────────
 samp = pd.read_csv(os.path.join(COMP, 'sample_submission.csv'))
-for sub_name in ['submission.csv', 'submission_pv.csv', 'submission_ours.csv']:
+for sub_name in ['submission.csv']:
     df = pd.read_csv(sub_name)
     assert len(df) == len(samp), f'{sub_name}: length mismatch (got {len(df)}, expected {len(samp)})'
     assert (df['molecule_id'] == samp['molecule_id']).all(), f'{sub_name}: molecule_id alignment error'
@@ -1226,6 +1266,6 @@ for sub_name in ['submission.csv', 'submission_pv.csv', 'submission_ours.csv']:
 
 sub = pd.read_csv('submission.csv')
 total_cco = sum(s.split(';').count('CCO') for s in sub['smiles'])
-print(f"\n[AUDIT] Total 'CCO' padding instances in final submission: {total_cco} (vs 268 in original 0.358 notebook)")
+print(f"\n[AUDIT] Total 'CCO' padding instances in final submission: {total_cco}")
 print("\nFirst 5 rows of final submission:")
 print(sub.head(5))
