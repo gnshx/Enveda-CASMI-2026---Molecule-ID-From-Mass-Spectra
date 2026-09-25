@@ -32,8 +32,23 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 import pandas as pd
 import pyarrow.parquet as pq
+import subprocess
 import torch
 import torch.nn as nn
+
+# Auto-install offline RDKit wheel in Kaggle offline environment
+try:
+    import rdkit
+except ImportError:
+    whl = sorted(glob.glob("/kaggle/input/**/rdkit*.whl", recursive=True)) or sorted(glob.glob("**/rdkit*.whl", recursive=True))
+    if whl:
+        print(f"[INFO] Installing offline RDKit wheel: {whl[0]}")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "--no-index", "--no-deps", whl[0]], check=False)
+    else:
+        print("[INFO] Installing rdkit via pip...")
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "rdkit"], check=False)
+
+import rdkit
 from rdkit import Chem, RDLogger
 from rdkit.Chem import rdMolDescriptors, AllChem, MACCSkeys
 
