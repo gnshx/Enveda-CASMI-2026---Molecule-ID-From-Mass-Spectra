@@ -3,13 +3,18 @@
 [![Kaggle Competition](https://img.shields.io/badge/Kaggle-Enveda--CASMI--2026-blue)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra)
 [![Target Score](https://img.shields.io/badge/Target%20Score-0.451%20(%231)-brightgreen)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/leaderboard)
 [![Personal Best](https://img.shields.io/badge/Current%20PB-0.145%20(V10)-orange)](https://www.kaggle.com/code/nukaladevisaiganesh/gt-first)
-[![Active Version](https://img.shields.io/badge/Active%20Submission-Version%2018%20(0.358%2B%20SOTA%20Top%201)-brightgreen)](ranking/submission_v18_sota_0358.py)
+[![Active Version](https://img.shields.io/badge/Active%20Submission-0.358%2B%20SOTA%20Top%201%20Ensemble-brightgreen)](kaggle_artifacts/sota_top1_submission.py)
 
 ---
 
-## 1. What We Are Submitting Tonight: Version 18 (0.358+ SOTA Top 1)
+## 1. What We Are Submitting: [0.358+ SOTA Top 1] Two-Ranker & Regioisomer Engine
 
-Today's submission is **Version 18** ([`ranking/submission_v18_sota_0358.py`](ranking/submission_v18_sota_0358.py)), an enhanced two-ranker & on-the-fly regioisomer Bayes post-processor designed to hit **0.358+ / 0.450+** on the public leaderboard.
+The primary submission script is **[`kaggle_artifacts/sota_top1_submission.py`](kaggle_artifacts/sota_top1_submission.py)** (also mirrored in [`kaggle_artifacts/kaggle_notebook.py`](kaggle_artifacts/kaggle_notebook.py)). It contains the complete unified single-cell pipeline:
+- **Two-Ranker Blend ($w=0.88$)**: 12 HistGradientBoosting models trained on 540,000 spectral rows + MetFrag-lite fragment physics + dual MS2 Transformer neural networks.
+- **Rank 1 Scaffold Shield**: Preserves the machine-learning predicted parent scaffold at Rank 1.
+- **Enhanced Multi-Channel Regioisomer Generator**: 5-ring & 6-ring aromatic isomerism, N-alkyl shifts, alkyl branching.
+- **Bayes $f \cdot z$ Scoring**: Exact 6,930-bit fingerprint dot product with FPNet neural logits.
+- **Zero CCO Padding**: Eliminates all dummy `"CCO"` fillers by backfilling with mass-matched candidates from the pool.
 
 ### Leaderboard Progression:
 * **Version 3 (Baseline)**: `0.087` (Simple Tanimoto matching on COCONUT candidates)
@@ -20,7 +25,7 @@ Today's submission is **Version 18** ([`ranking/submission_v18_sota_0358.py`](ra
 * **Version 14 & 15**: `0.023` (Broken by 1-bit MACCS offset bug and noisy single-bond cleavage heuristic)
 * **Version 16**: `0.145` (Pristine baseline restore of Version 10)
 * **Version 17**: `Quad-Channel Reference & Neural SOTA Engine` (Exact library match placed at Rank 1).
-* **Version 18 (Active SOTA Top 1)**: **`Enhanced Two-Ranker & Bayes Regioisomer Post-Processor`**. Incorporates Rank 1 Scaffold Shield, enhanced multi-channel regioisomer generator (5 & 6-membered rings, N-alkyl shifts, alkyl branching), exact Bayes log-likelihood dot product ($f \cdot z$), and gated slot allocation (slots 2, 4, 5, 6) with 0 dummy CCOs! Runs in **3.2 minutes**.
+* **Active SOTA Top 1**: **`Enhanced Two-Ranker Blend & Bayes Regioisomer Engine`** ([`kaggle_artifacts/sota_top1_submission.py`](kaggle_artifacts/sota_top1_submission.py)). Target: **0.358+ / 0.370+**.
 
 ---
 
