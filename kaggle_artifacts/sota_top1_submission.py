@@ -14,6 +14,12 @@
 # ==============================================================================
 
 import os, sys, glob, subprocess, time, math, pickle, itertools
+os.environ["PYTHONUNBUFFERED"] = "1"
+os.environ["PYDEVD_DISABLE_FILE_VALIDATION"] = "1"
+try:
+    sys.stdout.reconfigure(line_buffering=True)
+except Exception:
+    pass
 T_START = time.time()
 
 # ── 1. Offline RDKit Auto-Installation ─────────────────────────────────────────
