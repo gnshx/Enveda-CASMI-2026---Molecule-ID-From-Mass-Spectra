@@ -384,7 +384,7 @@ def explain_score(frag_mass, peak_mz, peak_int, mode=1.0, tol=0.01, h_shifts=(-2
 # ── 3. Module: pv_fp.py (Dual MS2 Transformer Neural Net) ─────────────────────
 with open('pv_fp.py', 'w') as f:
     f.write(r'''"""pv_fp.py — Spectrum -> fingerprint model (FPNet MS2 Transformer)."""
-import math
+import os, math
 import numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
 
