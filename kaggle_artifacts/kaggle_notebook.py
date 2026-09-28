@@ -715,7 +715,31 @@ def generate_constitutional_isomers(smi: str, max_variants: int = 30):
     except Exception:
         pass
 
-    # 7. Carbonyl / Enol Shifts
+    # 7. Amide Reversal
+    try:
+        rxn_amide = AllChem.ReactionFromSmarts('[#6:1]-C(=O)-[NH;X3:2]-[#6:3] >> [#6:1]-[NH;X3:2]-C(=O)-[#6:3]')
+        for p in rxn_amide.RunReactants((mol,)):
+            try_add_mol(p[0])
+    except Exception:
+        pass
+
+    # 8. Ketone Positional Shift Along Aliphatic Chain
+    try:
+        rxn_ketone = AllChem.ReactionFromSmarts('[#6:1]-C(=O)-[CH2:2]-[#6:3] >> [#6:1]-[CH2:2]-C(=O)-[#6:3]')
+        for p in rxn_ketone.RunReactants((mol,)):
+            try_add_mol(p[0])
+    except Exception:
+        pass
+
+    # 9. Aliphatic Secondary Alcohol Shift
+    try:
+        rxn_alc = AllChem.ReactionFromSmarts('[#6:1]-[CH;X4:2]([OH:4])-[CH2;X4:3]-[#6:5] >> [#6:1]-[CH2;X4:2]-[CH;X4:3]([OH:4])-[#6:5]')
+        for p in rxn_alc.RunReactants((mol,)):
+            try_add_mol(p[0])
+    except Exception:
+        pass
+
+    # 10. Carbonyl / Enol Shifts
     try:
         rxn_en = AllChem.ReactionFromSmarts('[C:1](=[O:4])[C;H1,H2:2][C;H1,H2:3] >> [C:1](-[O:4][H])[C:2]=[C:3]')
         for p in rxn_en.RunReactants((mol,)):
@@ -1078,47 +1102,7 @@ def score_molecules(recs, rankers, blocks, use_fp):
         out[r["mid"]] = sc
     return out
 
-def score_direct_neural(recs):
-    out = {}
-    for r in recs:
-        if not len(r["cand"]): continue
-        zlog = r.get("zlog")
-        if zlog is None:
-            out[r["mid"]] = np.zeros(len(r["cand"]), np.float32)
-            continue
-        p = 1.0 / (1.0 + np.exp(-np.clip(zlog.astype(np.float32), -20, 20)))
-        cfp = pool_fps(r["cand"]).astype(np.float32)
-        inter = cfp @ p
-        union = cfp.sum(1) + p.sum() - inter + 1e-9
-        out[r["mid"]] = (inter / union).astype(np.float32)
-    return out
-
-def blend_scores_tri(s_pv, s_ours, s_neural, w_pv=0.82, w_ours=0.12, w_neu=0.06):
-    out = {}
-    for mid in s_pv:
-        ra = 1.0 - pv._rank_norm(s_pv[mid])
-        rb = 1.0 - pv._rank_norm(s_ours[mid]) if s_ours and mid in s_ours else ra
-        rc = 1.0 - pv._rank_norm(s_neural[mid]) if s_neural and mid in s_neural else ra
-        out[mid] = w_pv * ra + w_ours * rb + w_neu * rc + 1e-6 * s_pv[mid]
-    return out
-
-def rrf_scores(ranker_list, k=60):
-    out = {}
-    mids = list(ranker_list[0][1].keys())
-    for mid in mids:
-        n_cands = len(ranker_list[0][1][mid])
-        rrf = np.zeros(n_cands, np.float32)
-        for weight, s_dict in ranker_list:
-            if mid not in s_dict or len(s_dict[mid]) != n_cands: continue
-            sc = s_dict[mid]
-            order = np.argsort(-sc)
-            ranks = np.empty_like(order)
-            ranks[order] = np.arange(len(order))
-            rrf += weight / (k + ranks.astype(np.float32))
-        out[mid] = rrf
-    return out
-
-def score_variants_bayes(smis, zlog, parent_smi=None):
+def score_variants_bayes(smis, zlog):
     from rdkit import Chem
     from rdkit.Chem import rdFingerprintGenerator, MACCSkeys
     if not _g: _fp_init()
@@ -1127,9 +1111,9 @@ def score_variants_bayes(smis, zlog, parent_smi=None):
     m3 = _g["m3"]
     rk = _g["rk"]
 
-    all_smis = ([parent_smi] if parent_smi else []) + [s for s in smis if s != parent_smi]
-    fps, valid_smis = [], []
-    for s in all_smis:
+    fps = []
+    valid_smis = []
+    for s in smis:
         m = Chem.MolFromSmiles(s)
         if not m: continue
         try:
@@ -1143,20 +1127,11 @@ def score_variants_bayes(smis, zlog, parent_smi=None):
             valid_smis.append(s)
         except Exception:
             continue
-    if not fps: return [], 0.0
-    if zlog is None: return [(s, 0.0) for s in valid_smis if s != parent_smi], 0.0
+    if not fps: return []
+    if zlog is None: return valid_smis
     F = np.stack(fps).astype(np.float32)
     scores = F @ zlog.astype(np.float32)
-
-    parent_score = None
-    var_scored = []
-    for s, sc in zip(valid_smis, scores):
-        if parent_smi and s == parent_smi and parent_score is None:
-            parent_score = float(sc)
-        else:
-            var_scored.append((s, float(sc)))
-    var_scored.sort(key=lambda x: -x[1])
-    return var_scored, parent_score if parent_score is not None else 0.0
+    return [s for _, s in sorted(zip(scores, valid_smis), key=lambda x: -x[0])]
 
 def make_submissions(mols, recs, score_sets, sample_path, workers, topn=25):
     from multiprocessing import Pool as MPool
@@ -1206,17 +1181,12 @@ def make_submissions(mols, recs, score_sets, sample_path, workers, topn=25):
             try:
                 raw_vars = regio_generator.generate_constitutional_isomers(parent_smi, max_variants=35)
                 raw_vars = [v for v in raw_vars if v != parent_smi and v not in seen_smis]
-                var_scored, parent_sc = score_variants_bayes(raw_vars, zlog, parent_smi=parent_smi)
+                ranked_vars = score_variants_bayes(raw_vars, zlog)
             except Exception:
-                var_scored, parent_sc = [], 0.0
+                ranked_vars = []
 
-            # Confidence-Gated Slot Allocation
-            # High-confidence: score within 1.5 of parent (or higher than parent!)
-            high_conf = [s for s, sc in var_scored if sc >= parent_sc - 1.5]
-            med_conf = [s for s, sc in var_scored if sc < parent_sc - 1.5 and sc >= parent_sc - 4.0]
-            remaining_vars = [s for s, sc in var_scored if s not in set(high_conf) and s not in set(med_conf)]
-            all_candidate_vars = high_conf + med_conf + remaining_vars
-
+            # Gated Slot Allocation with Zero CCO Salvage
+            # Slots: [2, 4, 5, 6] (0-indexed 1, 3, 4, 5) get top Bayes regioisomers!
             base_tail = base_cands[1:]
             res = [parent_smi]
             seen_final = {parent_smi}
@@ -1226,34 +1196,32 @@ def make_submissions(mols, recs, score_sets, sample_path, workers, topn=25):
 
             while len(res) < topn:
                 r = len(res)
-                # Slot 2 (index 1): ONLY promote if a high-confidence regioisomer exists!
-                # If no high-confidence variant exists, preserve the ML model's Rank 2 candidate!
-                if r == 1:
-                    if high_conf and var_idx < len(high_conf):
-                        cand_smi = high_conf[var_idx]; var_idx += 1
-                    elif tail_idx < len(base_tail):
-                        cand_smi = base_tail[tail_idx]; tail_idx += 1
-                    elif var_idx < len(all_candidate_vars):
-                        cand_smi = all_candidate_vars[var_idx]; var_idx += 1
-                    elif fb_idx < len(DEFAULT_FALLBACK):
-                        cand_smi = DEFAULT_FALLBACK[fb_idx]; fb_idx += 1
-                    else:
-                        cand_smi = "CCO"
-                # Slots 4, 6 (indices 3, 5): promote next available variants
-                elif r in (3, 5) and var_idx < len(all_candidate_vars):
-                    cand_smi = all_candidate_vars[var_idx]; var_idx += 1
+                if r in (1, 3, 4, 5) and var_idx < len(ranked_vars):
+                    cand_smi = ranked_vars[var_idx]
+                    var_idx += 1
+                    if cand_smi not in seen_final:
+                        seen_final.add(cand_smi)
+                        res.append(cand_smi)
                 elif tail_idx < len(base_tail):
-                    cand_smi = base_tail[tail_idx]; tail_idx += 1
-                elif var_idx < len(all_candidate_vars):
-                    cand_smi = all_candidate_vars[var_idx]; var_idx += 1
+                    cand_smi = base_tail[tail_idx]
+                    tail_idx += 1
+                    if cand_smi not in seen_final:
+                        seen_final.add(cand_smi)
+                        res.append(cand_smi)
+                elif var_idx < len(ranked_vars):
+                    cand_smi = ranked_vars[var_idx]
+                    var_idx += 1
+                    if cand_smi not in seen_final:
+                        seen_final.add(cand_smi)
+                        res.append(cand_smi)
                 elif fb_idx < len(DEFAULT_FALLBACK):
-                    cand_smi = DEFAULT_FALLBACK[fb_idx]; fb_idx += 1
+                    cand_smi = DEFAULT_FALLBACK[fb_idx]
+                    fb_idx += 1
+                    if cand_smi not in seen_final:
+                        seen_final.add(cand_smi)
+                        res.append(cand_smi)
                 else:
-                    cand_smi = "CCO"
-
-                if cand_smi not in seen_final:
-                    seen_final.add(cand_smi)
-                    res.append(cand_smi)
+                    res.append("CCO")
 
             rows.append((mid, ";".join(res[:topn])))
 
@@ -1295,29 +1263,17 @@ def main(test_path, train_path, sample_path, our_rank_path, pv_rank_path, fp_mod
     s_pv = score_molecules(recs, pvr, ["base"], use_fp=True)
     del pvr
 
-    log("computing direct neural fingerprint continuous similarity (Ranker C)...")
-    s_neural = score_direct_neural(recs)
-
-    # 1. Calibrated Tri-Ranker Blend
-    s_tri = blend_scores_tri(s_pv, s_ours, s_neural, w_pv=w_pv, w_ours=0.12, w_neu=0.06)
-
-    # 2. Reciprocal Rank Fusion Ensemble
-    ranker_list = [(0.80, s_pv)]
     if s_ours is not None:
-        ranker_list.append((0.14, s_ours))
-    ranker_list.append((0.06, s_neural))
-    s_rrf = rrf_scores(ranker_list, k=60)
-
-    scores_dict = {"blend": s_tri, "rrf": s_rrf, "pv": s_pv}
-    if s_ours is not None:
-        scores_dict["ours"] = s_ours
+        scores_dict = {"blend": blend_scores(s_pv, s_ours, w_pv), "pv": s_pv, "ours": s_ours}
+    else:
+        scores_dict = {"blend": s_pv, "pv": s_pv}
 
     subs = make_submissions(mols, recs, scores_dict, sample_path, workers)
     log("submissions ready")
     return subs, recs
 ''')
 
-# ── 6. Execution: Tri-Ranker Blend & RRF Ensemble + Confidence-Gated Regioisomers
+# ── 6. Execution: Two-Ranker (w=0.88) + Enhanced Regioisomer Bayes Engine
 import numpy as np, pandas as pd
 import casmi_engine as E
 
@@ -1333,7 +1289,7 @@ print(f"[INFO] Ranker A train data: {rank_train_path}")
 if sim_rank_path:
     print(f"[INFO] Ranker B train data: {sim_rank_path}")
 else:
-    print("[NOTICE] 'sim_rank_rows_nofp.npz' not found. Using Ranker A + Ranker C + Gated Regioisomer Engine.")
+    print("[NOTICE] 'sim_rank_rows_nofp.npz' not found. Using Ranker A (0.328+) + Enhanced Regioisomer Bayes Engine.")
 
 subs, recs = E.main(
     os.path.join(COMP, 'test.parquet'),
@@ -1343,12 +1299,10 @@ subs, recs = E.main(
     rank_train_path,
     fp_models,
     workers=os.cpu_count(),
-    w_pv=0.82
+    w_pv=0.88
 )
 
 subs['blend'].to_csv('submission.csv', index=False)
-if 'rrf' in subs:
-    subs['rrf'].to_csv('submission_rrf.csv', index=False)
 if 'pv' in subs:
     subs['pv'].to_csv('submission_pv.csv', index=False)
 if 'ours' in subs:
@@ -1358,7 +1312,7 @@ print(f"\n[SUCCESS] Completed pipeline execution in {(time.time() - T_START) / 6
 
 # ── 7. Verification & Audit ───────────────────────────────────────────────────
 samp = pd.read_csv(os.path.join(COMP, 'sample_submission.csv'))
-for sub_name in ['submission.csv', 'submission_rrf.csv']:
+for sub_name in ['submission.csv', 'submission_pv.csv', 'submission_ours.csv']:
     if not os.path.exists(sub_name): continue
     df = pd.read_csv(sub_name)
     assert len(df) == len(samp), f'{sub_name}: length mismatch (got {len(df)}, expected {len(samp)})'
