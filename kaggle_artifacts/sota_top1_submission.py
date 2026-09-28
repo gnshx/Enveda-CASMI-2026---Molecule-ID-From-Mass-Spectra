@@ -1102,6 +1102,14 @@ def score_molecules(recs, rankers, blocks, use_fp):
         out[r["mid"]] = sc
     return out
 
+def blend_scores(a, b, wa):
+    out = {}
+    for mid in a:
+        ra = 1.0 - pv._rank_norm(a[mid])
+        rb = 1.0 - pv._rank_norm(b[mid]) if b and mid in b else ra
+        out[mid] = wa * ra + (1.0 - wa) * rb + 1e-6 * a[mid]
+    return out
+
 def score_variants_bayes(smis, zlog):
     from rdkit import Chem
     from rdkit.Chem import rdFingerprintGenerator, MACCSkeys
