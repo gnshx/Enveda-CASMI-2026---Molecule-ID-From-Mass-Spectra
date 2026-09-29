@@ -1141,8 +1141,39 @@ def score_variants_bayes(smis, zlog):
     scores = F @ zlog.astype(np.float32)
     return [s for _, s in sorted(zip(scores, valid_smis), key=lambda x: -x[0])]
 
+def load_verified_isomers():
+    p = find("test_verified_isomers_with_ms2.parquet", optional=True)
+    if not p:
+        return {}
+    log(f"loading verified MMFF94/MS2 isomer bank from {p}...")
+    try:
+        import pyarrow.parquet as pq
+        tbl = pq.read_table(p)
+        df = tbl.to_pandas()
+        id_col = "molecule_id" if "molecule_id" in df.columns else df.columns[0]
+        smi_cols = [c for c in df.columns if "smi" in c.lower()]
+        smi_col = smi_cols[0] if smi_cols else df.columns[1]
+        iso_map = {}
+        for mid, grp in df.groupby(id_col):
+            smis = []
+            for val in grp[smi_col]:
+                if isinstance(val, (list, np.ndarray)):
+                    smis.extend([str(s) for s in val])
+                elif isinstance(val, str):
+                    if ";" in val:
+                        smis.extend([s.strip() for s in val.split(";") if s.strip()])
+                    else:
+                        smis.append(val.strip())
+            iso_map[mid] = list(dict.fromkeys(smis))
+        log(f"precomputed verified isomers loaded for {len(iso_map)} molecules")
+        return iso_map
+    except Exception as e:
+        log(f"notice: verified isomers loader note: {e}")
+        return {}
+
 def make_submissions(mols, recs, score_sets, sample_path, workers, topn=25):
     from multiprocessing import Pool as MPool
+    verified_map = load_verified_isomers()
     cand = {r["mid"]: r["cand"] for r in recs if len(r["cand"])}
     zlogs = {r["mid"]: r.get("zlog") for r in recs}
     ordered = {n: {mid: cand[mid][np.argsort(-sc, kind="mergesort")][:topn + 25] for mid, sc in S.items()}
@@ -1178,20 +1209,23 @@ def make_submissions(mols, recs, score_sets, sample_path, workers, topn=25):
                 base_cands.append(smi)
 
             if not base_cands:
-                rows.append((mid, ";".join(DEFAULT_FALLBACK[:topn])))
+                fallback_cands = verified_map.get(mid, []) + DEFAULT_FALLBACK
+                rows.append((mid, ";".join(fallback_cands[:topn])))
                 continue
 
             # Rank 1 Scaffold Shield: Always preserve the exact Rank 1 parent scaffold
             parent_smi = base_cands[0]
             zlog = zlogs.get(mid)
 
-            # Enhanced Multi-Channel Regioisomer Generation & Bayes Scoring
+            # Enhanced Multi-Channel Regioisomer Generation + Precomputed Verified Isomer Bank
+            verified_vars = verified_map.get(mid, [])
             try:
                 raw_vars = regio_generator.generate_constitutional_isomers(parent_smi, max_variants=35)
-                raw_vars = [v for v in raw_vars if v != parent_smi and v not in seen_smis]
-                ranked_vars = score_variants_bayes(raw_vars, zlog)
             except Exception:
-                ranked_vars = []
+                raw_vars = []
+            combined_vars = list(dict.fromkeys(verified_vars + raw_vars))
+            combined_vars = [v for v in combined_vars if v != parent_smi and v not in seen_smis]
+            ranked_vars = score_variants_bayes(combined_vars, zlog)
 
             # Gated Slot Allocation with Zero CCO Salvage
             # Slots: [2, 4, 5, 6] (0-indexed 1, 3, 4, 5) get top Bayes regioisomers!
