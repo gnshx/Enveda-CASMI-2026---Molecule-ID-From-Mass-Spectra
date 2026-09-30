@@ -1056,7 +1056,9 @@ if __name__ == '__main__':
     E.find = _find
     E.RANK.W_A = (0.35, 0.55); E.RANK.SEEDS = (0, 1); E.CFG.N_ANALOG = 200
 
-    fp_models = sorted(p for p in glob.glob('/kaggle/input/**/fp_*.pt', recursive=True) if 'casmi26-fp-models-v2' in p)
+    fp_models = sorted(p for p in glob.glob('/kaggle/input/**/fp_*.pt', recursive=True) if ('casmi26-fp-models' in p or 'fingerprint' in p.lower() or 'single' in p.lower()))
+    if not fp_models:
+        fp_models = sorted(glob.glob('/kaggle/input/**/fp_*.pt', recursive=True))
     if not fp_models:
         fp_models = sorted(glob.glob('/kaggle/input/**/fpnet_*.pt', recursive=True))[:2]
     print('engine fp models:', fp_models, flush=True)
