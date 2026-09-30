@@ -1354,6 +1354,11 @@ except Exception as e:
 
 # ── 6. v4n Base Retrieval + Feature Families + LightGBM Ranker ───────────────
 sys.path.insert(0, V4CODE)
+sys.path.insert(1, os.path.join(V4CODE, 'fe_v4'))
+_v1e_hits = glob.glob('/kaggle/input/**/v1engine.py', recursive=True) or glob.glob('**/v1engine.py', recursive=True)
+if _v1e_hits:
+    sys.path.insert(0, os.path.dirname(_v1e_hits[0]))
+
 os.makedirs('work', exist_ok=True)
 for f in ['pool_meta.parquet', 'pool_fp.npy', 'pool_frag_off.npy', 'pool_frag_mass.npy', 'fp_bits.npy', 'train_structs.parquet', 'train_fp_sel.npy']:
     src = os.path.join(POOL_DIR, f); dst = f'work/{f}'
@@ -1369,7 +1374,6 @@ from casmi.engine import Engine, EngineCfg, FEATURES
 from casmi import fpnet, chem
 import v1engine
 
-sys.path.insert(1, os.path.join(V4CODE, 'fe_v4'))
 dev = 'cuda' if torch.cuda.is_available() else 'cpu'
 L = Library('work'); P = Pool('work')
 tfp = np.load('work/train_fp_sel.npy')
