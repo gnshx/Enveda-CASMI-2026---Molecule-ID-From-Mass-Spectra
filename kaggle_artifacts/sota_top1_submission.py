@@ -1505,10 +1505,47 @@ def gl_of(m):
     g = GL_SCORES.get(str(m), {}) if isinstance(GL_SCORES, dict) else {}
     return g if isinstance(g, dict) and any(v is not None for v in g.values()) else {}
 
-def gl_rerank(order0, smis, keys, scs, forms, ice, gl, top_n, tag=''):
-    if not gl: return order0
+# ── Popularity Prior (PubChem Documentation / Apex Prior) ────────────────────
+POP_MAP = {}
+try:
+    pop_dir = find('pool_lsid.npy', optional=True)
+    if pop_dir:
+        pop_dir = os.path.dirname(pop_dir)
+    else:
+        hits = glob.glob('/kaggle/input/**/pool_lsid.npy', recursive=True) or glob.glob('**/pool_lsid.npy', recursive=True)
+        pop_dir = os.path.dirname(hits[0]) if hits else None
+    
+    if pop_dir and os.path.exists(os.path.join(pop_dir, 'pool_lsid.npy')):
+        p_lsid = np.load(os.path.join(pop_dir, 'pool_lsid.npy')).astype(np.float32)
+        p_lpmid = np.load(os.path.join(pop_dir, 'pool_lpmid.npy')).astype(np.float32)
+        p_pop = p_lsid + p_lpmid
+        
+        pool_meta_file = find('pool_meta.parquet', optional=True) or 'work/pool_meta.parquet'
+        if os.path.exists(pool_meta_file):
+            pm = pd.read_parquet(pool_meta_file, columns=['key'])
+            for k, v in zip(pm['key'], p_pop):
+                if v > 0:
+                    POP_MAP[k] = float(v)
+        print(f'PubChem Popularity Prior loaded successfully: {len(POP_MAP):,} keys mapped!')
+    else:
+        print('PubChem Popularity Prior not attached, continuing without it.')
+except Exception as e:
+    print('Popularity prior notice:', repr(e))
+
+POP_LAM = 0.35 if POP_MAP else 0.0
+
+def gl_rerank(order0, smis, keys, scs, forms, ice, gl, top_n, tag='', pop_map=POP_MAP):
+    if not gl and not pop_map: return order0
     try:
-        o = gl_fuse.rerank_multi(smis, keys, scs, forms, [ice, gl], [ICE_LAM, GL_LAM], top_n=top_n)
+        models, weights = [], []
+        if ice:
+            models.append(ice); weights.append(ICE_LAM)
+        if gl:
+            models.append(gl); weights.append(GL_LAM)
+        if pop_map:
+            pop_dict = {k: float(pop_map.get(k, 0.0)) for k in keys}
+            models.append(pop_dict); weights.append(POP_LAM)
+        o = gl_fuse.rerank_multi(smis, keys, scs, forms, models, weights, top_n=top_n)
     except Exception as e:
         print('gl rerank failed', tag, repr(e)); return order0
     for k, v in (('molecules', 1), ('changed_vs_ice_top25', int(o[:25] != order0[:25])), ('changed_vs_ice_top1', int(o[:1] != order0[:1]))):
@@ -1620,17 +1657,22 @@ if ENG:
 
         if e and e['smiles']:
             fsm, fk, fsc = fuse2(vs, e['smiles'], e['keys'])
-            ice = ICE_SCORES.get(str(mid), {}) if isinstance(ICE_SCORES, dict) else {}
-            if ice:
+            if ice or POP_MAP:
                 try:
-                    o = ice_fuse.rerank(fsm, fk, fsc, [_form2(x) for x in fsm], ice, lam=ICE_LAM, top_n=len(fsm))
+                    models, weights = [], []
+                    if ice:
+                        models.append(ice); weights.append(ICE_LAM)
                     _g = gl_of(mid)
                     if _g:
-                        o = gl_fuse.rerank_multi(fsm, fk, fsc, [_form2(x) for x in fsm], [ice, _g], [ICE_LAM, GL_LAM], top_n=len(fsm))
+                        models.append(_g); weights.append(GL_LAM)
+                    if POP_MAP:
+                        pop_dict = {k: float(POP_MAP.get(k, 0.0)) for k in fk}
+                        models.append(pop_dict); weights.append(POP_LAM)
+                    o = gl_fuse.rerank_multi(fsm, fk, fsc, [_form2(x) for x in fsm], models, weights, top_n=len(fsm))
                     n_ice += int(o[:25] != list(range(min(25, len(o)))))
                     fsm = [fsm[i] for i in o]
                 except Exception as ex:
-                    print('fused ICE rerank failed', mid, repr(ex))
+                    print('fused ICE/GL/POP rerank failed', mid, repr(ex))
             
             # HIGH-CONFIDENCE LIBRARY MATCH SHIELD:
             # If lib_max >= 0.88, protect the experimental library match at Rank 1 from forward model noise
