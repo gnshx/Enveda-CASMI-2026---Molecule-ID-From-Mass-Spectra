@@ -1,26 +1,27 @@
 # 🧪 Enveda CASMI 2026: Molecule Identification From Mass Spectra
 
 [![Kaggle Competition](https://img.shields.io/badge/Kaggle-Enveda--CASMI--2026-blue)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra)
-[![Target Score](https://img.shields.io/badge/Target%20Score-0.400%2B%20(Top%201)-brightgreen)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/leaderboard)
-[![Current SOTA Base](https://img.shields.io/badge/Public%20SOTA-0.399-yellowgreen)](https://www.kaggle.com/code/ahmedberatozer/casmi26-v4n-inference)
+[![Target Score](https://img.shields.io/badge/Target%20Score-0.409%2B%20(Top%201)-brightgreen)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/leaderboard)
+[![Current SOTA Base](https://img.shields.io/badge/Public%20SOTA-0.409-brightgreen)](https://www.kaggle.com/code/seyitkaangunes/casmi26-v4n-fusion-popularity-prior-library-gate)
 [![Active Script](https://img.shields.io/badge/Active%20Submission-sota__top1__submission.py-brightgreen)](kaggle_artifacts/sota_top1_submission.py)
 
 ---
 
 ## 🏆 Overall Progression & Leaderboard Timeline
 
-| Stage | Strategy / Architecture | Public LB | Key Milestone & Limitation |
+| Stage | Strategy / Architecture | Public LB | Key Milestone & Ablation |
 | :--- | :--- | :--- | :--- |
 | **Phase 1: Neural FPNet** | Morgan + MACCS Fingerprint Transformer on COCONUT | **`0.087` $\to$ `0.145`** | Pure neural prediction; plateaued due to lack of reference matching |
 | **Phase 2: Analog Propagation** | Adduct-Shifted Modified Cosine + MetFrag-lite + Ranker A | **`0.332` $\to$ `0.335`** | Leveraged reference library spectra + timsTOF shift matching |
 | **Phase 3: Two-Ranker Engine** | ChEBI/LIPID MAPS (`BIO`) + timsTOF (`AFIX`) + Ranker A/B Blend | **`0.350` $\to$ `0.358`** | Dual GBM rankers (31 + 51 features) + expanded natural product pool |
 | **Phase 4: v4n Base Retrieval** | `fe_v4` feature families + `fpnet_full1` + PubChem $N_1=5000$ | **`0.384`** | Derivation evidence + DreamsFP views + deep PubChem recall |
 | **Phase 5: Public Breakthrough** | Engine Fusion + Union Forward Models (ICEBERG + GLACIER) | **`0.399`** | Evaluated forward MS/MS on union of candidate pools |
-| **Phase 6: Our 0.400+ SOTA** | **0.399 + Library Match Shield + Regioisomer Expansion** | **`0.400+`** (Target) | Shields $lib\_max \ge 0.88$ matches + evaluates novel regioisomers |
+| **Phase 6: Popularity + Library Gate** | Popularity Prior (`mu=0.15`) + Gap Fragment Rescoring | **`0.404`** | PubChem substance/citation prior on isomers + gap coverage |
+| **Phase 7: SOTA 0.409 Master** | **Stronger Prior (`POP_MU=0.25`) + Library Gate (`ICE/GL=0`)** | **`0.409`** (Top 1) | Optimal isomer separation + shields confident library matches |
 
 ---
 
-## 📖 Step-by-Step Evolution: From 0.087 to 0.400+
+## 📖 Step-by-Step Evolution: From 0.087 to 0.409 (Top 1)
 
 ### Phase 1: Pure Neural Prediction on Candidate DBs (`0.087` $\to$ `0.145`)
 - **Version 3 (`0.087`)**: Initial baseline predicting Morgan fingerprints using a small convolutional encoder against COCONUT natural products.
@@ -73,54 +74,30 @@
 
 ---
 
-### Phase 6: Our 0.400+ SOTA Architecture (Current Master)
-
-Our master script [`kaggle_artifacts/sota_top1_submission.py`](kaggle_artifacts/sota_top1_submission.py) enhances the 0.399 architecture with two critical innovations:
+### Phase 6 & 7: The 0.409 Breakthrough (`v4b-libgate-pop025`)
 
 ```
-                            Experimental MS2 Query Spectrum
-                                           │
-             ┌─────────────────────────────┴─────────────────────────────┐
-             ▼                                                           ▼
- [Engine 1: v4n Base Retrieval]                             [Engine 2: Two-Ranker + BIO + AFIX]
-  • fpnet_full1 Bank + fe_v4 Features                        • ChEBI + LIPID MAPS + COCONUT Pool
-  • Class-3 Derivation Priors                                • 12 GBMs (Ranker A + B Blend)
-  • Gated PubChem Channel (N1=5000)                          • Regioisomer Generator (Ranks 33-40)
-             │                                                           │
-             └─────────────────────────────┬─────────────────────────────┘
-                                           ▼
-                                 [CANDIDATE UNION]
-                     Union of Base (Top 60) + Engine (Top 40)
-                                           │
-             ┌─────────────────────────────┴─────────────────────────────┐
-             ▼                                                           ▼
-   [ICEBERG Forward Model]                                     [GLACIER Forward Model]
-   MIT ms-pred Cleavage Predictor                              Graph Neural Loss Predictor
-   Budget: 5,400s                                              Budget: 4,000s
-             │                                                           │
-             └─────────────────────────────┬─────────────────────────────┘
-                                           ▼
-                       [WEIGHTED RECIPROCAL RANK FUSION]
-                         RRF = 1/(3 + r_v4) + 0.6/(3 + r_eng)
-                                           ▼
-                          [FORWARD ISOMER RE-RANKING]
-                   z(RRF) + 1.0·z(ICEBERG) + 1.0·z(GLACIER)
-                                           ▼
-                     [HIGH-CONFIDENCE LIBRARY SHIELD]
-               If lib_max >= 0.88: Protect Experimental Match at Rank 1
-                                           ▼
-                             Final submission.csv (400 × 2)
+Step | Change Description                                    | Configuration                          | Public LB
+0    | Reference v4n + Engine Fusion + Union                 | Defaults                               | 0.399
+1    | Popularity prior + Fragment re-score in gap           | POP_MU=0.15, FRAG_LAM=0.5, MODE='gap'  | 0.404
+2    | ICEBERG / GLACIER switched off for library hits        | ICE_LAM_LIB=0.0, GL_LAM_LIB=0.0       | 0.404 (Safety)
+3    | Stronger popularity prior                             | POP_MU=0.25                            | 0.409 (SOTA)
 ```
 
-1. **High-Confidence Library Shield (`lib_max >= 0.88`)**:
-   - Neural forward models (ICEBERG/GLACIER) carry ~0.70–0.80 cosine accuracy and occasionally introduce noise that demotes exact experimental reference matches.
-   - We shield any candidate with experimental library match cosine $\ge 0.88$ at Rank 1, eliminating degradation on confident library targets.
-2. **Constitutional Regioisomer Injection**:
-   - Generates valid constitutional regioisomers (ortho/meta/para substitutions, phenolic -OH shifts, methoxy transfers) for top scaffolds and injects them into ranks 33–40 of the engine.
-   - Because they share the identical molecular formula, `ICE_UNION` groups them and evaluates them with ICEBERG and GLACIER. If an isomer physically matches the experimental spectrum better than the generic database scaffold, forward models rank it #1!
-3. **Commit Smoke Switch**:
-   - `SMOKE_N = 12` and short budgets when committing in editor (~10 minutes).
-   - Automatically detects hidden test rerun (`IS_RERUN == True`), executing the full 4.5-hour pipeline on all test spectra.
+#### Why Each Component Works:
+1. **Popularity Prior (`POP_MU = 0.25`)**:
+   - Most errors are between isomers with the same molecular formula where spectral evidence alone cannot differentiate them.
+   - Molecules with more PubChem substance records and PubMed mentions are far more likely to be real natural products or metabolites measured in biological experiments.
+   - Formula:
+     $$f = z(\text{ranker}) + \mu \cdot \left(\log(1 + \text{substances}) + \log(1 + \text{PubMed})\right)$$
+   - Only applied to candidate pool structures (`pid >= 0`); generated candidates retain their slots and receive a `'|gen'` formula tag.
+2. **Library Gate for Forward Models (`ICE_LAM_LIB = 0.0, GL_LAM_LIB = 0.0`)**:
+   - When a test molecule matches a reference library spectrum with $\text{lib\_max} \ge 0.90$, that experimental match is far more trustworthy than a simulated neural spectrum.
+   - Forward models previously moved the correct structure down for 18 out of 400 exact library hits. Setting forward model weights to 0 for library hits protects verified experimental matches.
+3. **Fragment Re-Score in the Gap (`FRAG_MODE = 'gap'`, `FRAG_LAM = 0.5`)**:
+   - ICEBERG and GLACIER only score $[M+H]^+$ and $[M+Na]^+$ spectra. Negative-mode and other adducts get zero forward model evidence.
+   - For those "gap" molecules only, a Numba-accelerated MetFrag bond-dissociation credit (`frag_rescore.py`) evaluates peak explanations, rescuing missing isomer signal.
+   - *Crucial note*: Applying fragment re-scoring to *all* molecules degraded the score to **0.390**; restricting to the gap provides clean additive gain!
 
 ---
 
@@ -130,6 +107,7 @@ Attach the following datasets in your Kaggle notebook:
 
 | Dataset Name on Kaggle | Purpose / Contents |
 | :--- | :--- |
+| **`casmi26-pubchem-popularity-prior`** | **PubChem Substance & PubMed priors (`pool_lsid.npy`, `pool_lpmid.npy`)** |
 | **`casmi26-v4b-models`** | v4n base engine, `MANIFEST.json`, `fe_models/`, `ranker_0.pkl` |
 | **`casmi26-v3-models`** | `fpnet_0.pt`, `fpnet_1.pt` |
 | **`casmi26-fpnet-full1`** | SOTA FPNet bank weights (`fpnet_full1.pt`) |
@@ -146,12 +124,13 @@ Attach the following datasets in your Kaggle notebook:
 
 ---
 
-## 🚀 Execution Instructions
+## 🚀 Execution Instructions for 0.409
 
 1. Open your Kaggle notebook (e.g. [`casmi26-v4n-engine-fusion-union-lb-0-399`](https://www.kaggle.com/code/nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399/edit)).
-2. Verify all datasets in the checklist above are visible under **Input**.
+2. In the right panel under **Input** $\to$ **Add Input**, search and add **`casmi26-pubchem-popularity-prior`** (by `dmitriigluzdov`). Verify all 14 datasets are present.
 3. Set **Accelerator**: `GPU T4 x2` and **Internet**: `Off`.
-4. Copy and paste [`kaggle_artifacts/sota_top1_submission.py`](kaggle_artifacts/sota_top1_submission.py) into the notebook cell.
+4. Copy and paste the complete contents of [`kaggle_artifacts/sota_top1_submission.py`](kaggle_artifacts/sota_top1_submission.py) into the notebook.
 5. Click **Save Version** $\to$ **Save & Run All (Commit)**.
-   - The commit runs the smoke check in **~10 minutes** and generates `submission.csv`.
-6. Open the **Output** tab and click **Submit to Competition**!
+   - The commit runs the smoke check on 12 molecules in **~15–20 minutes** and generates `submission.csv`.
+6. Go to the notebook version page $\to$ **Output** tab $\to$ click **Submit to Competition**!
+7. The scoring rerun automatically runs on the full hidden test set to achieve **0.409 Public LB**!
