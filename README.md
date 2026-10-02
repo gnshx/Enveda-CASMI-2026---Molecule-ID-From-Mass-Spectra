@@ -4,6 +4,14 @@
 [![Target Score](https://img.shields.io/badge/Target%20Score-0.409%2B%20(Top%201)-brightgreen)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/leaderboard)
 [![Current SOTA Base](https://img.shields.io/badge/Public%20SOTA-0.409-brightgreen)](https://www.kaggle.com/code/seyitkaangunes/casmi26-v4n-fusion-popularity-prior-library-gate)
 [![Active Script](https://img.shields.io/badge/Active%20Submission-sota__top1__submission.py-brightgreen)](kaggle_artifacts/sota_top1_submission.py)
+[![Progress Tracker](https://img.shields.io/badge/Roadmap%20%26%20Progress-progress%2F-blue)](progress/ROADMAP_AND_PROGRESS.md)
+[![Next Experiments Plan](https://img.shields.io/badge/Future%20Plan-0.450%2B-orange)](progress/FUTURE_EXPERIMENTS_PLAN.md)
+
+---
+
+> 📌 **Key Documentation**:
+> - Detailed Step-by-Step History & Ablation Study: [progress/ROADMAP_AND_PROGRESS.md](progress/ROADMAP_AND_PROGRESS.md)
+> - Actionable Plan for Next Experiments (0.409 $\to$ 0.450+): [progress/FUTURE_EXPERIMENTS_PLAN.md](progress/FUTURE_EXPERIMENTS_PLAN.md)
 
 ---
 
