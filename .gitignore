@@ -29,3 +29,7 @@ data/
 Thumbs.db
 .idea/
 .vscode/
+
+# Wheels and scratch
+*.whl
+scratch/

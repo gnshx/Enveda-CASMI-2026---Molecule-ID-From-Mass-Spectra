@@ -120,16 +120,41 @@ Step | Change Description                                    | Configuration    
 0    | Reference v4n + Engine Fusion + Union                 | Defaults                               | 0.399
 1    | Popularity prior + Fragment re-score in gap           | POP_MU=0.15, FRAG_LAM=0.5, MODE='gap'  | 0.404
 2    | ICEBERG / GLACIER switched off for library hits        | ICE_LAM_LIB=0.0, GL_LAM_LIB=0.0       | 0.404 (Safety)
-3    | Stronger popularity prior                             | POP_MU=0.25                            | 0.409 (SOTA)
+3    | Stronger popularity prior                             | POP_MU=0.25                            | 0.409
+4    | PubChem Join (Main Engine Ranking)                    | PC_JOIN_N=50, PC_JOIN_MAX_LIB=0.7     | 0.420 (CURRENT SOTA)
 ```
 
 * **What Worked**:
+  - **PubChem Join (`PC_JOIN_N=50, PC_JOIN_MAX_LIB=0.7`)**:
+    - The main pool only has ~710,000 structures (COCONUT + training set). Previously, any candidate outside this pool was relegated to fixed PubChem slots (4, 8, 12, ...), meaning an out-of-pool candidate could **never** rank #1!
+    - `pc_join.py` injects the top 50 PubChem-only proposals directly into the `V1FE` main engine as ordinary candidates. They receive full feature extraction (all 160 features: analog propagation, forward models, derivation priors) and are evaluated by the LightGBM ranker.
+    - Molecules with strong library matches (`lib_max >= 0.7`) are safely gated out so correct pool answers are never displaced.
+    - Result: Single largest leaderboard jump in the entire competition (**0.409 $\to$ 0.420**, +0.011).
   - `POP_MU = 0.25`: Prior $f = z(\text{ranker}) + \mu \cdot (\log(1 + \text{SIDs}) + \log(1 + \text{PMIDs}))$ cleanly separates authentic metabolites from obscure synthetic combinations.
-  - `ICE_LAM_LIB = 0.0, GL_LAM_LIB = 0.0`: Protected 18 out of 400 exact library hits from degradation.
+  - `ICE_LAM_LIB = 0.0, GL_LAM_LIB = 0.0`: Protected 18 out of 400 exact library hits from forward model simulation distortion.
   - `FRAG_MODE = 'gap', FRAG_LAM = 0.5`: Evaluated bond-cleavage intensity only for uncovered adducts.
 * **What Failed (Negative Ablations)**:
   - Applying fragment re-score to *all* molecules: **`0.390`** (diluted forward model predictions).
   - Popularity prior inside the PubChem-only channel: **`0.393` to `0.405`** (hurt precision of novel compounds).
+  - Unverified constitutional regioisomer injection without neural forward scoring: **`0.397`**.
+
+---
+
+## 🔍 Diagnosis: Version 3/4 (0.384) vs Version 6 (0.397) vs Version 7 (0.420)
+
+1. **Version 3 & 4 (`0.384`)**:
+   - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
+   - Engine 2 produced empty `{}` lists; pipeline silently bypassed Stage C and submitted raw base `v4n` (`0.384`).
+2. **Version 6 (`0.397`)**:
+   - **Recovery**: Engine 2 glob was resolved; Engine 2 ran cleanly and successfully fused.
+   - **Score**: `0.397` (reproducing reference Step 0 baseline ~`0.399`).
+   - **Why 0.397 and not 0.409?**: Ran with reference defaults (`POP_MU=0.0`, `PC_JOIN_N=0`) without the PubChem join or popularity prior.
+3. **The Leap to 0.420 (Version 7)**:
+   - **PubChem Join**: `PC_JOIN_N=50, PC_JOIN_MAX_LIB=0.7` active via `pc_join.py`.
+   - **Popularity Prior**: `POP_MU=0.25` on pool candidates.
+   - **Forward Model Library Gate**: `ICE_LAM_LIB=0.0, GL_LAM_LIB=0.0`.
+   - **Gap Fragment Rescoring**: `FRAG_LAM=0.5, FRAG_MODE='gap'`.
+   - Result: Guaranteed **`0.420`**.
 
 ---
 
@@ -142,8 +167,8 @@ Enveda-CASMI-2026/
 │   ├── ROADMAP_AND_PROGRESS.md              # [This file] Complete history & ablation details
 │   └── FUTURE_EXPERIMENTS_PLAN.md           # Actionable plan to reach 0.450 - 0.500
 ├── kaggle_artifacts/
-│   ├── sota_top1_submission.py              # Active master submission script (0.409 SOTA)
-│   ├── kaggle_notebook.py                   # Kaggle notebook mirror
+│   ├── sota_top1_submission.py              # Active master submission script (0.420 SOTA)
+│   ├── kaggle_notebook.py                   # Kaggle notebook mirror (0.420 SOTA)
 │   └── candidate_db.parquet                 # Local evaluation artifacts
 ├── experiments/                             # Experiment tracking & legacy validation logs
 └── models/                                  # Checkpoints & serialized weights

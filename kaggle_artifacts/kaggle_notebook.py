@@ -1,12 +1,18 @@
 # ==============================================================================
-# 🧪 CASMI 2026: SOTA 0.409 MASTER PIPELINE
-# CASMI26 | v4n Fusion + Popularity Prior + Library Gate [LB 0.409]
+# 🚀 CASMI 2026: SOTA 0.420 PIPELINE (v4n Fusion + PubChem Join [LB 0.420])
+# Enveda CASMI 2026 - High-Throughput Molecule Identification from Mass Spectra
 #
-# Ablation Progression:
-#   Step 0: Reference (v4n + Engine Fusion + Union)             -> LB 0.399
-#   Step 1: Popularity prior (mu=0.15) + Frag re-score (gap)   -> LB 0.404
-#   Step 2: Library gate for forward models (ICE/GL_LAM_LIB=0) -> LB 0.404 (safety)
-#   Step 3: Stronger popularity prior (POP_MU=0.25)             -> LB 0.409
+# Breakthrough Architecture (LB 0.399 -> 0.409 -> 0.420):
+#   1. v4n Base Retrieval: EngineCfg(generate=True) + fe_v4 + fpnet_full1
+#   2. PubChem Join (NEW - LB 0.420): Top 50 PubChem-only proposals are injected
+#      directly into the main engine as ordinary candidates, scored by all 160 features
+#      and ranked by the main ranker + forward models (bypassing the fixed-slot barrier).
+#   3. Two-Ranker Engine (BIO + AFIX): ChEBI/LIPID MAPS (bio_fp) + timsTOF analogs (N=200)
+#   4. Candidate Union Forward Models: ICEBERG (5400s) + GLACIER (4000s)
+#   5. Popularity Prior: PubChem SIDs + PMIDs log-frequency (POP_MU=0.25)
+#   6. Library Gate: Forward models silenced for confident experimental matches (lib_max >= 0.90)
+#   7. Gap Fragment Rescoring: MetFrag intensity credit (FRAG_LAM=0.5, MODE='gap')
+#   8. Weighted Reciprocal Rank Fusion: RRF(k) = 1/(3+r_v4) + 0.6/(3+r_eng) -> Top 25
 # ==============================================================================
 
 import os, sys, glob, re, subprocess, time, json, hashlib, pickle, gc
@@ -40,10 +46,15 @@ def sha256(path, n=1 << 22):
             h.update(b)
     return h.hexdigest()
 
+def dump(name, obj):
+    if CFG['DUMP_STAGES']:
+        os.makedirs(STAGE, exist_ok=True)
+        json.dump(obj, open(os.path.join(STAGE, f'{name}.json'), 'w'))
+
 def log(*a):
     print(f'[{time.time()-T0:6.0f}s]', *a, flush=True)
 
-# ── 1. Embedded Sources ────────────────────────────────────────────────────────
+# ── 1. Embedded Sources (Self-Contained Architecture) ─────────────────────────
 EMBED = {
 'eng/casmi_engine.py': '''"""End-to-end inference (Kaggle notebook body). Mirrors e02_channels.py + e05_rank.py feature blocks exactly,
 but reads train.parquet / test.parquet directly. Runs locally too (set CASMI_LOCAL=1).
@@ -59,8 +70,7 @@ import re as _re
 _MONO = dict(C=12.0, H=1.00782503207, N=14.0030740048, O=15.9949146196, S=31.97207100, P=30.97376163,
  Cl=34.96885268, Br=78.9183371, F=18.99840322, I=126.904473, Si=27.9769265325, Se=79.9165213,
  Na=22.9897692809, K=38.96370668, B=11.0093054, As=74.9215965, Fe=55.9349375, D=2.0141017778)
-_TOK = _re.compile(r"([A-Z][a-z]?)(\\d*)")
-
+_TOK = _re.compile(r"([A-Z][a-z]?)(d*)")
 
 def formula_mass(f):
     if not isinstance(f, str) or not f: return np.nan
@@ -72,7 +82,6 @@ def formula_mass(f):
 
 POOL = None
 
-
 class RANK:
     W_A = (0.35, 0.55)
     SEEDS = (0, 1)
@@ -82,17 +91,16 @@ T0 = time.time()
 LOCAL = os.environ.get("CASMI_LOCAL") == "1"
 ROOTS = [r"C:\\Users\\HW-LEE\\Desktop\\CASMI"] if LOCAL else ["/kaggle/input"]
 
-
 def find(name):
     for root in ROOTS:
         hits = glob.glob(os.path.join(root, "**", name), recursive=True)
         if hits: return sorted(hits, key=len)[0]
+    hits = glob.glob(f"**/{name}", recursive=True)
+    if hits: return sorted(hits, key=len)[0]
     raise FileNotFoundError(name)
-
 
 def log(msg):
     print(f"[{time.time()-T0:6.0f}s] {msg}", flush=True)
-
 
 def load_library(path):
     f = pq.ParquetFile(path)
@@ -108,7 +116,7 @@ def load_library(path):
     r0 = p0 = 0
     for i in range(f.num_row_groups):
         t = f.read_row_group(i, columns=["inchikey14", "normalized_smiles", "adduct", "precursor_mz", "ionization_mode",
-         "ms2_mzs", "ms2_normalized_intensities", "molecular_formula", "instrument_type"])
+                                          "ms2_mzs", "ms2_normalized_intensities", "molecular_formula", "instrument_type"])
         mzc = t.column("ms2_mzs").combine_chunks(); itc = t.column("ms2_normalized_intensities").combine_chunks()
         o = mzc.offsets.to_numpy().astype(np.int64)
         n = len(o) - 1; k = int(o[-1] - o[0])
@@ -122,7 +130,7 @@ def load_library(path):
         smi += t.column("normalized_smiles").cast(pa.string()).to_pylist()
         fo += t.column("molecular_formula").cast(pa.string()).to_pylist()
         tims.append(np.array([isinstance(x, str) and x.lower().replace("-", "").replace(" ", "") == "timstof"
-         for x in t.column("instrument_type").cast(pa.string()).to_pylist()]))
+                              for x in t.column("instrument_type").cast(pa.string()).to_pylist()]))
         r0 += n; p0 += k
         del t, mzc, itc
     prec = np.concatenate(prec); add = np.asarray(add, dtype=object)
@@ -135,11 +143,9 @@ def load_library(path):
     log(f"library mass index: formula {np.isfinite(nmf).mean():.1%}, timsTOF rows {tims.mean():.1%}")
     del fo
     return dict(off=off, mz=allmz, it=allin, prec=prec, nm=nm, pol=pol, tims=tims,
-     ik=np.asarray(ik, dtype=object), smi=np.asarray(smi, dtype=object))
-
+                ik=np.asarray(ik, dtype=object), smi=np.asarray(smi, dtype=object))
 
 _g = {}
-
 
 def _fp_init():
     from rdkit import RDLogger
@@ -150,7 +156,6 @@ def _fp_init():
     _g["m3"] = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=4096)
     _g["rk"] = rdFingerprintGenerator.GetRDKitFPGenerator(fpSize=2048, maxPath=6)
 
-
 def fp_and_mass(smi):
     from rdkit import Chem
     from rdkit.Chem import MACCSkeys
@@ -160,13 +165,12 @@ def fp_and_mass(smi):
     if m is None: return None
     try:
         fp = np.concatenate([_g["m2"].GetFingerprintAsNumPy(m).astype(np.uint8),
-         _g["m3"].GetFingerprintAsNumPy(m).astype(np.uint8),
-         _g["rk"].GetFingerprintAsNumPy(m).astype(np.uint8),
-         np.array(MACCSkeys.GenMACCSKeys(m), dtype=np.uint8)])[_g["bits"]]
+                             _g["m3"].GetFingerprintAsNumPy(m).astype(np.uint8),
+                             _g["rk"].GetFingerprintAsNumPy(m).astype(np.uint8),
+                             np.array(MACCSkeys.GenMACCSKeys(m), dtype=np.uint8)])[_g["bits"]]
         return np.packbits(fp), float(ExactMolWt(m))
     except Exception:
         return None
-
 
 def canon_key(smi):
     from rdkit import Chem, RDLogger
@@ -179,14 +183,15 @@ def canon_key(smi):
     except Exception:
         return None
 
-
 def build_pool(L, workers):
     from multiprocessing import Pool as MPool
     d = os.path.dirname(find("coco_fp.npy"))
     cm = pickle.load(open(os.path.join(d, "coco_meta.pkl"), "rb"))
     co_fp = np.load(os.path.join(d, "coco_fp.npy")); co_mass = np.load(os.path.join(d, "coco_mass.npy"))
     co_keys = np.asarray(cm["keys"], dtype=object); co_smi = np.asarray(cm["smiles"], dtype=object)
-    bd = os.path.dirname(find("bio_fp.npy")); bm = pickle.load(open(os.path.join(bd, "bio_meta.pkl"), "rb"))
+    
+    bio_fp_path = find("bio_fp.npy")
+    bd = os.path.dirname(bio_fp_path); bm = pickle.load(open(os.path.join(bd, "bio_meta.pkl"), "rb"))
     bkeys = np.asarray(bm["keys"], dtype=object); bnew = ~pd.Series(bkeys).isin(set(co_keys)).values
     co_fp = np.vstack([co_fp, np.load(os.path.join(bd, "bio_fp.npy"))[bnew]])
     co_mass = np.concatenate([co_mass, np.load(os.path.join(bd, "bio_mass.npy"))[bnew]])
@@ -209,16 +214,13 @@ def build_pool(L, workers):
     log(f"pool {len(o):,} structures")
     return P
 
-
 def pool_fps(idx):
     return np.unpackbits(np.asarray(POOL["fp"][np.asarray(idx, np.int64)]), axis=1)[:, :6930]
-
 
 def pool_window(t, ppm):
     a = np.searchsorted(POOL["mass"], t * (1 - ppm / 1e6), "left")
     b = np.searchsorted(POOL["mass"], t * (1 + ppm / 1e6), "right")
     return np.arange(a, b)
-
 
 def _reps(L, rows):
     npk = np.diff(L["off"])[rows]
@@ -228,7 +230,6 @@ def _reps(L, rows):
     o = np.argsort(rep_nm, kind="mergesort"); rep = rep[o]
     roff, rmz, rit = pv.clean_store(rep, L["off"], L["mz"], L["it"], CFG.INT_FLOOR, CFG.MAX_PEAKS, CFG.INT_POWER, CFG.ENT_WEIGHT)
     return dict(rep=rep, rep_p=L["row_p"][rep], rep_nm=L["nm"][rep], roff=roff, rmz=rmz, rit=rit)
-
 
 def build_index(L):
     ok = np.isfinite(L["nm"]) & (L["row_p"] >= 0)
@@ -241,11 +242,9 @@ def build_index(L):
     log(f"index: {len(rows):,} library rows; representatives {len(I['all']['rep']):,}")
     return I
 
-
 def clean(mz, it):
     return pv._clean(np.asarray(mz, np.float32), np.asarray(it, np.float32),
-     CFG.INT_FLOOR, CFG.MAX_PEAKS, CFG.INT_POWER, CFG.ENT_WEIGHT)
-
+                     CFG.INT_FLOOR, CFG.MAX_PEAKS, CFG.INT_POWER, CFG.ENT_WEIGHT)
 
 def analog_search(R, Q, target):
     lo = np.searchsorted(R["rep_nm"], target - CFG.ANALOG_WIN, "left")
@@ -257,12 +256,10 @@ def analog_search(R, Q, target):
             asim = np.maximum(asim, pv.search_shift_pre(qm, qp, lo, hi, R["roff"], R["rmz"], R["rit"], CFG.MZ_TOL, shift))
     return R["rep_p"][lo:hi], asim
 
-
 def top_analogs(p, s):
     if len(p) == 0: return []
     df = pd.DataFrame({"p": p, "s": s}).groupby("p", sort=False).s.max().sort_values(ascending=False, kind="mergesort")
     return list(zip(df.index[:CFG.N_ANALOG].astype(int), df.values[:CFG.N_ANALOG].astype(float)))
-
 
 def molecule_channels(L, I, specs, precs, pols, target):
     Q = [clean(a, b) for a, b in specs]
@@ -276,11 +273,11 @@ def molecule_channels(L, I, specs, precs, pols, target):
     for j, (qm, qp) in enumerate(Q):
         if len(crow) == 0: break
         s = pv.search(qm, qp, crow, L["off"], L["mz"], L["it"], CFG.MZ_TOL, CFG.INT_FLOOR, CFG.MAX_PEAKS,
-         CFG.INT_POWER, CFG.ENT_WEIGHT)
+                      CFG.INT_POWER, CFG.ENT_WEIGHT)
         np.maximum.at(M[j], inv, s)
         sh = (precs[j] - L["prec"][crow]).astype(np.float32)
         s2 = pv.search_shift_rows(qm, qp, crow, L["off"], L["mz"], L["it"], CFG.MZ_TOL, CFG.INT_FLOOR, CFG.MAX_PEAKS,
-         CFG.INT_POWER, CFG.ENT_WEIGHT, sh)
+                                  CFG.INT_POWER, CFG.ENT_WEIGHT, sh)
         np.maximum.at(MS[j], inv, s2)
     cnt = np.bincount(inv, minlength=len(u)).astype(np.float32)
     z = np.zeros(0, np.float32)
@@ -295,7 +292,6 @@ def molecule_channels(L, I, specs, precs, pols, target):
     anapol = top_analogs(np.concatenate(ps), np.concatenate(ss)) if ps else []
     return lib, ana, anapol
 
-
 def parse_ce(v):
     try:
         a = np.abs(np.atleast_1d(np.asarray(v, float)))
@@ -303,11 +299,9 @@ def parse_ce(v):
     except Exception:
         return 25.0
 
-
 def _rel(v):
     v = np.asarray(v, np.float32)
     return [v, pv._rank_norm(v).astype(np.float32), v - (v.max() if len(v) else 0.0)]
-
 
 def _analog_feats(cfp, ana):
     nc = len(cfp)
@@ -320,34 +314,27 @@ def _analog_feats(cfp, ana):
     ap6 = (tan * (w ** 6)[None, :]).max(1)
     return np.column_stack(_rel(ap) + [ap6, np.full(nc, w[0])]).astype(np.float32)
 
-
 def blk_base(r, cfp):
     ana = r["ana"]
     afp = pool_fps([p for p, _ in ana]) if ana else None
     sims = np.array([s for _, s in ana], np.float32)
     return pv.rank_features(cfp, r["lib"], afp, sims, r["zlog"], r["frag"])
 
-
 def blk_mass(r, cfp):
     ppm = (POOL["mass"][r["cand"]] - r["target"]) / r["target"] * 1e6
     return np.column_stack([ppm, np.abs(ppm), np.abs(ppm + 1.5)]).astype(np.float32)
-
 
 def blk_libx(r, cfp):
     cnt = np.log1p(r["lib_cnt"])
     return np.column_stack(_rel(r["lib_mean"]) + _rel(r["libsh"]) + [cnt, cnt - cnt.max()]).astype(np.float32)
 
-
 def blk_anapol(r, cfp):
     return _analog_feats(cfp, r["anapol"])
-
 
 def blk_fragx(r, cfp):
     return np.column_stack(_rel(r["frag_ad"]) + _rel(r["frag_mean"]) + [r["frag_pol"]]).astype(np.float32)
 
-
 BLOCKS = {"base": blk_base, "mass": blk_mass, "libx": blk_libx, "anapol": blk_anapol, "fragx": blk_fragx}
-
 
 def compute_channels(L, I, models, te):
     mols = list(te.groupby("molecule_id", sort=True))
@@ -371,20 +358,19 @@ def compute_channels(L, I, models, te):
             ces = np.array([parse_ce(v) for v in sub.collision_energy_ev.values], np.float32)
             import pv_fp
             zlog = pv_fp.molecule_logits(models, specs, sub.precursor_mz.values.astype(np.float32),
-             list(sub.adduct.astype(str).values), list(sub.instrument_type.astype(str).values),
-             ces, modes)
+                                         list(sub.adduct.astype(str).values), list(sub.instrument_type.astype(str).values),
+                                         ces, modes)
             u, lmax, lmean, lsh, lcnt = lib
             pos = {int(x): i for i, x in enumerate(u)}
             ci = np.array([pos.get(int(c), -1) for c in cand], np.int64); has = ci >= 0
             rec.update(target=target, cand=cand, zlog=None if zlog is None else zlog.astype(np.float32), specs=specs,
-             mode=float(np.mean(modes)), modes=modes, adducts=list(sub.adduct.astype(str).values),
-             ana=ana, anapol=anapol)
+                       mode=float(np.mean(modes)), modes=modes, adducts=list(sub.adduct.astype(str).values),
+                       ana=ana, anapol=anapol)
             for nm_, arr in (("lib", lmax), ("lib_mean", lmean), ("libsh", lsh), ("lib_cnt", lcnt)):
                 v = np.zeros(len(cand), np.float32); v[has] = arr[ci[has]]; rec[nm_] = v
         recs.append(rec)
         if gi % 50 == 0: log(f" channels {gi}/{len(mols)}")
     return mols, recs
-
 
 def compute_frag(recs, workers):
     from multiprocessing import Pool as MPool
@@ -408,12 +394,10 @@ def compute_frag(recs, workers):
                 F3[j, k] = pv.explain_score(fm, x, y, mode=r["modes"][k], tol=CFG.MZ_TOL)
         r["frag"] = F1.max(1); r["frag_ad"] = F2.max(1); r["frag_mean"] = F3.mean(1); r["frag_pol"] = F3.max(1)
 
-
 def _hgb(X, Y, W, seed, gbm):
     from sklearn.ensemble import HistGradientBoostingClassifier
     m = HistGradientBoostingClassifier(random_state=seed, **gbm); m.fit(X, Y, sample_weight=W)
     return m
-
 
 def fit_rankers(rank_train_path):
     z = np.load(rank_train_path, allow_pickle=True)
@@ -422,13 +406,11 @@ def fit_rankers(rank_train_path):
     log(f"our ranker: {len(rankers)} GBMs on {X.shape[0]:,} rows x {X.shape[1]} features")
     return rankers, [str(b) for b in z["blocks"]]
 
-
 def fit_pv_rankers(pv_rank_path, priors=(0.30, 0.60), seeds=(0, 1, 2, 3)):
     z = np.load(pv_rank_path)
     rankers = [_hgb(z["X"], z["Y"], np.where(z["M"] == 0, w1, 1.0 - w1), sd, CFG.GBM) for w1 in priors for sd in seeds]
     log(f"prvsiyan ranker: {len(rankers)} GBMs on {z['X'].shape[0]:,} rows x {z['X'].shape[1]} features")
     return rankers, z["X"].shape[1]
-
 
 def score_molecules(recs, rankers, blocks, use_fp):
     out = {}
@@ -440,20 +422,19 @@ def score_molecules(recs, rankers, blocks, use_fp):
         out[r["mid"]] = np.mean([m.predict_proba(Xm)[:, 1] for m in rankers], axis=0)
     return out
 
-
 def blend_scores(a, b, wa):
     out = {}
     for mid in a:
-        ra = 1.0 - pv._rank_norm(a[mid]); rb = 1.0 - pv._rank_norm(b[mid])
+        ra = 1.0 - pv._rank_norm(a[mid])
+        rb = 1.0 - pv._rank_norm(b[mid]) if (b is not None and mid in b) else ra
         out[mid] = wa * ra + (1.0 - wa) * rb + 1e-6 * a[mid]
     return out
-
 
 def make_submissions(mols, recs, score_sets, sample_path, workers, topn=25):
     from multiprocessing import Pool as MPool
     cand = {r["mid"]: r["cand"] for r in recs if len(r["cand"])}
     ordered = {n: {mid: cand[mid][np.argsort(-sc, kind="mergesort")][:topn + 15] for mid, sc in S.items()}
-     for n, S in score_sets.items()}
+               for n, S in score_sets.items()}
     allc = [v for o in ordered.values() for v in o.values()]
     short = np.unique(np.concatenate(allc)) if allc else np.zeros(0, np.int64)
     with MPool(workers) as mp:
@@ -479,7 +460,6 @@ def make_submissions(mols, recs, score_sets, sample_path, workers, topn=25):
         assert (sub.smiles.str.split(";").map(len) <= topn).all()
         subs[n] = sub
     return subs
-
 
 def main(test_path, train_path, sample_path, our_rank_path, pv_rank_path, fp_model_paths, workers=4, limit=0, w_pv=0.88):
     global POOL
@@ -507,15 +487,14 @@ def main(test_path, train_path, sample_path, our_rank_path, pv_rank_path, fp_mod
     s_pv = score_molecules(recs, pvr, ["base"], use_fp=True)
     del pvr
     subs = make_submissions(mols, recs, {"blend": blend_scores(s_pv, s_ours, w_pv), "pv": s_pv, "ours": s_ours},
-     sample_path, workers)
+                            sample_path, workers)
     log("submissions ready")
     return subs, recs, {"pv": s_pv, "ours": s_ours}
 ''',
 
 'eng/eng_runner.py': '''"""Our engine (two-ranker, BIO + AFIX) -> {molecule_id: {smiles: [...], keys: [...]}} (blend order, top 40)."""
-import os, sys, json, time
+import os, sys, json, time, glob
 import numpy as np
-
 if __name__ == '__main__':
     here = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, here)
     test, train, sample, out = sys.argv[1:5]
@@ -525,50 +504,46 @@ if __name__ == '__main__':
     _orig_find = E.find
     def _find(n):
         if n == 'fp_bits.npy':
-            return os.path.join(os.path.dirname(_orig_find('coco_fp.npy')), 'fp_bits.npy')
+            hits = glob.glob('/kaggle/input/**/coco_fp.npy', recursive=True) or glob.glob('**/coco_fp.npy', recursive=True)
+            if hits: return os.path.join(os.path.dirname(hits[0]), 'fp_bits.npy')
+        hits = glob.glob(f'/kaggle/input/**/{n}', recursive=True) or glob.glob(f'**/{n}', recursive=True)
+        if hits: return sorted(hits, key=len)[0]
         return _orig_find(n)
     E.find = _find
     E.RANK.W_A = tuple(C['W_A']); E.RANK.SEEDS = tuple(C['SEEDS']); E.CFG.N_ANALOG = int(C['N_ANALOG'])
-    import glob
-    fp_models = sorted(p for p in glob.glob('/kaggle/input/**/fp_*.pt', recursive=True) if ('casmi26-fp-models' in p or 'fingerprint' in p.lower() or 'single' in p.lower()))
+    
+    fp_models = sorted(p for p in glob.glob('/kaggle/input/**/fp_*.pt', recursive=True) if ('casmi26-fp-models' in p or 'fingerprint' in p.lower() or 'single' in p.lower() or 'merged' in p.lower()))
     if not fp_models:
         fp_models = sorted(glob.glob('/kaggle/input/**/fp_*.pt', recursive=True))
     if not fp_models:
         fp_models = sorted(glob.glob('/kaggle/input/**/fpnet_*.pt', recursive=True))[:2]
-    if not fp_models:
-        fp_models = sorted(p for p in glob.glob('/kaggle/input/**/fp_*.pt', recursive=True))
     print('engine fp models', fp_models, flush=True)
+    assert len(fp_models) > 0, "No fingerprint models found!"
+    
     T0 = time.time()
-    subs, recs, S = E.main(test, train, sample, E.find('sim_rank_rows_nofp.npz'), E.find('rank_train.npz'), fp_models,
-     workers=os.cpu_count(), w_pv=C['W_PV'])
-    bl = E.blend_scores(S['pv'], S['ours'], C['W_PV'])
+    subs, recs, S = E.main(test, train, sample, _find('sim_rank_rows_nofp.npz'), _find('rank_train.npz'), fp_models,
+                           workers=os.cpu_count(), w_pv=C['W_PV'])
+    bl = E.blend_scores(S['pv'], S.get('ours'), C['W_PV'])
     res = {}
     for r in recs:
         mid = r['mid']
-        if mid not in bl:
-            continue
+        if mid not in bl: continue
         order = np.argsort(-bl[mid], kind='mergesort')[:int(C['ORDER_K'])]
         smis, keys, seen = [], [], set()
         for c in r['cand'][order]:
             s = E.POOL['smiles'][c]; k = E.canon_key(s)
-            if k is None or k in seen:
-                continue
+            if k is None or k in seen: continue
             seen.add(k); smis.append(s); keys.append(k)
-            if len(smis) >= int(C['TOPK']):
-                break
+            if len(smis) >= int(C['TOPK']): break
         res[str(mid)] = dict(smiles=smis, keys=keys)
     json.dump(res, open(out, 'w'))
     print('engine lists', len(res), f'{time.time()-T0:.0f}s', flush=True)
 ''',
 
-'eng/pv.py': '''"""prvsiyan analog-propagation pipeline components (public notebook, version of 2026-09-16), copied
-verbatim where possible so local simulations and the Kaggle notebook share one source of truth.
-Additions are marked `# ADDED`.
-"""
+'eng/pv.py': '''"""prvsiyan analog-propagation pipeline components."""
 import math
 import numpy as np
 from numba import njit, prange
-
 
 class CFG:
     PPM_WIN = 10.0
@@ -585,7 +560,6 @@ class CFG:
     SEEDS = (0, 1, 2, 3)
     GBM = dict(max_depth=6, max_iter=500, learning_rate=0.03, min_samples_leaf=80, l2_regularization=1.0)
     TOPN = 25
-
 
 @njit(cache=True, fastmath=True)
 def _clean(mz, it, floor, topk, power, ent_weight):
@@ -621,10 +595,9 @@ def _clean(mz, it, floor, topk, power, ent_weight):
         if S < 3.0:
             w = 0.25 + 0.25 * S; s2 = 0.0
             for i in range(c): oi[i] = oi[i] ** w; s2 += oi[i]
-        if s2 > 0:
-            for i in range(c): oi[i] /= s2
+            if s2 > 0:
+                for i in range(c): oi[i] /= s2
     return om, oi
-
 
 @njit(cache=True, fastmath=True)
 def entropy_sim(qmz, qp, cmz, cp, tol):
@@ -651,7 +624,6 @@ def entropy_sim(qmz, qp, cmz, cp, tol):
         if v > 0: SAB -= v * np.log(v)
     return 1.0 - (2.0 * SAB - SA - SB) / np.log(4.0)
 
-
 @njit(cache=True, fastmath=True, parallel=True)
 def search(qmz, qp, cand, off, allmz, allin, tol, floor, topk, power, ent_weight):
     out = np.zeros(len(cand), np.float32)
@@ -663,7 +635,6 @@ def search(qmz, qp, cand, off, allmz, allin, tol, floor, topk, power, ent_weight
         out[k] = entropy_sim(qmz, qp, cm, cp, tol)
     return out
 
-
 @njit(cache=True, fastmath=True)
 def entropy_sim_shift(qmz, qp, cmz, cp, tol, shift):
     a = entropy_sim(qmz, qp, cmz, cp, tol)
@@ -673,7 +644,6 @@ def entropy_sim_shift(qmz, qp, cmz, cp, tol, shift):
     b = entropy_sim(qmz, qp, sm, cp, tol)
     return a if a > b else b
 
-
 @njit(cache=True, fastmath=True, parallel=True)
 def search_shift_pre(qmz, qp, lo, hi, roff, rmz, rit, tol, shift):
     out = np.zeros(hi - lo, np.float32)
@@ -682,7 +652,6 @@ def search_shift_pre(qmz, qp, lo, hi, roff, rmz, rit, tol, shift):
         if b <= a: continue
         out[k] = entropy_sim_shift(qmz, qp, rmz[a:b], rit[a:b], tol, shift[k])
     return out
-
 
 @njit(cache=True, fastmath=True, parallel=True)
 def search_shift_rows(qmz, qp, cand, off, allmz, allin, tol, floor, topk, power, ent_weight, shift):
@@ -695,13 +664,11 @@ def search_shift_rows(qmz, qp, cand, off, allmz, allin, tol, floor, topk, power,
         out[k] = entropy_sim_shift(qmz, qp, cm, cp, tol, shift[k])
     return out
 
-
 @njit(cache=True)
 def clean_store(rows, off, allmz, allin, floor, topk, power, ent_weight):
     n = len(rows)
     lens = np.zeros(n + 1, np.int64)
-    tmp_m = []
-    tmp_i = []
+    tmp_m, tmp_i = [], []
     for k in range(n):
         r = rows[k]
         cm, cp = _clean(allmz[off[r]:off[r + 1]], allin[off[r]:off[r + 1]], floor, topk, power, ent_weight)
@@ -712,28 +679,26 @@ def clean_store(rows, off, allmz, allin, floor, topk, power, ent_weight):
         om[lens[k]:lens[k + 1]] = tmp_m[k]; oi[lens[k]:lens[k + 1]] = tmp_i[k]
     return lens, om, oi
 
-
 MASS = dict(C=12.0, H=1.00782503207, N=14.0030740048, O=15.9949146196, P=30.97376163,
- S=31.97207100, F=18.99840322, Cl=34.96885268, Br=78.9183371, I=126.904473,
- Na=22.9897692809, K=38.96370668, Si=27.9769265325, B=11.0093054, Se=79.9165213)
+            S=31.97207100, F=18.99840322, Cl=34.96885268, Br=78.9183371, I=126.904473,
+            Na=22.9897692809, K=38.96370668, Si=27.9769265325, B=11.0093054, Se=79.9165213)
 E = 0.00054857990; PROTON = MASS['H'] - E; H2O = 2 * MASS['H'] + MASS['O']
 NH4 = MASS['N'] + 4 * MASS['H']; FORMATE = MASS['C'] + 2 * MASS['H'] + 2 * MASS['O']
 ACETATE = 2 * MASS['C'] + 4 * MASS['H'] + 2 * MASS['O']
 ADDUCTS = {
- "[M+H]+": (1, 1, PROTON), "[M+NH4]+": (1, 1, NH4 - E), "[M+Na]+": (1, 1, MASS['Na'] - E),
- "[M+K]+": (1, 1, MASS['K'] - E), "[M-H2O+H]+": (1, 1, PROTON - H2O), "[M-2H2O+H]+": (1, 1, PROTON - 2 * H2O),
- "[M+2H]2+": (1, 2, 2 * PROTON), "[M]+": (1, 1, -E), "[M-H2O]+": (1, 1, -E - H2O),
- "[M+CH3OH+H]+": (1, 1, PROTON + MASS['C'] + 4 * MASS['H'] + MASS['O']),
- "[M+CH3CN+H]+": (1, 1, PROTON + 2 * MASS['C'] + 3 * MASS['H'] + MASS['N']),
- "[M-H]-": (1, 1, -PROTON), "[M-H2O-H]-": (1, 1, -PROTON - H2O), "[M+CH2O2-H]-": (1, 1, FORMATE - PROTON),
- "[M+C2H4O2-H]-": (1, 1, ACETATE - PROTON), "[M+Cl]-": (1, 1, MASS['Cl'] + E), "[M]-": (1, 1, E),
- "[M-2H]-": (1, 2, -2 * PROTON), "[M+Na-2H]-": (1, 1, MASS['Na'] - 2 * PROTON),
- "[2M+H]+": (2, 1, PROTON), "[2M+Na]+": (2, 1, MASS['Na'] - E), "[2M+NH4]+": (2, 1, NH4 - E),
- "[2M+K]+": (2, 1, MASS['K'] - E), "[2M-H]-": (2, 1, -PROTON), "[2M+CH2O2-H]-": (2, 1, FORMATE - PROTON),
- "[2M+C2H4O2-H]-": (2, 1, ACETATE - PROTON), "[2M+Na-2H]-": (2, 1, MASS['Na'] - 2 * PROTON),
- "[3M+H]+": (3, 1, PROTON), "[3M-H]-": (3, 1, -PROTON),
+    "[M+H]+": (1, 1, PROTON), "[M+NH4]+": (1, 1, NH4 - E), "[M+Na]+": (1, 1, MASS['Na'] - E),
+    "[M+K]+": (1, 1, MASS['K'] - E), "[M-H2O+H]+": (1, 1, PROTON - H2O), "[M-2H2O+H]+": (1, 1, PROTON - 2 * H2O),
+    "[M+2H]2+": (1, 2, 2 * PROTON), "[M]+": (1, 1, -E), "[M-H2O]+": (1, 1, -E - H2O),
+    "[M+CH3OH+H]+": (1, 1, PROTON + MASS['C'] + 4 * MASS['H'] + MASS['O']),
+    "[M+CH3CN+H]+": (1, 1, PROTON + 2 * MASS['C'] + 3 * MASS['H'] + MASS['N']),
+    "[M-H]-": (1, 1, -PROTON), "[M-H2O-H]-": (1, 1, -PROTON - H2O), "[M+CH2O2-H]-": (1, 1, FORMATE - PROTON),
+    "[M+C2H4O2-H]-": (1, 1, ACETATE - PROTON), "[M+Cl]-": (1, 1, MASS['Cl'] + E), "[M]-": (1, 1, E),
+    "[M-2H]-": (1, 2, -2 * PROTON), "[M+Na-2H]-": (1, 1, MASS['Na'] - 2 * PROTON),
+    "[2M+H]+": (2, 1, PROTON), "[2M+Na]+": (2, 1, MASS['Na'] - E), "[2M+NH4]+": (2, 1, NH4 - E),
+    "[2M+K]+": (2, 1, MASS['K'] - E), "[2M-H]-": (2, 1, -PROTON), "[2M+CH2O2-H]-": (2, 1, FORMATE - PROTON),
+    "[2M+C2H4O2-H]-": (2, 1, ACETATE - PROTON), "[2M+Na-2H]-": (2, 1, MASS['Na'] - 2 * PROTON),
+    "[3M+H]+": (3, 1, PROTON), "[3M-H]-": (3, 1, -PROTON),
 }
-
 
 def neutral_mass(mz, adduct):
     out = np.full(len(mz), np.nan); ad = np.asarray(adduct, dtype=object)
@@ -742,20 +707,16 @@ def neutral_mass(mz, adduct):
         if m.any(): out[m] = (mz[m] * z - d) / n
     return out
 
-
 N_ANALOG = 80
 P_SIM = 3.0
 N_FEAT = 31
 
-
 def _rank_norm(x):
     o = np.argsort(-x); r = np.empty(len(x)); r[o] = np.arange(len(x)); return r / max(1, len(x) - 1)
-
 
 def _z(x):
     s = x.std()
     return (x - x.mean()) / s if s > 1e-9 else np.zeros_like(x)
-
 
 def rank_features(cand_fp, cand_lib, analog_fp, analog_sim, model_logits=None, frag=None):
     nc = cand_fp.shape[0]
@@ -778,7 +739,7 @@ def rank_features(cand_fp, cand_lib, analog_fp, analog_sim, model_logits=None, f
         raw = cf @ np.asarray(model_logits, np.float32)
         nrm = raw / np.sqrt(np.maximum(cs, 1.0))
         mfeat = [_z(raw), _rank_norm(raw), raw - raw.max(), _z(nrm), _rank_norm(nrm),
-         (raw == raw.max()).astype(np.float32)]
+                 (raw == raw.max()).astype(np.float32)]
     else:
         mfeat = [np.zeros(nc, np.float32)] * 6
     if model_logits is not None and nc:
@@ -788,7 +749,7 @@ def rank_features(cand_fp, cand_lib, analog_fp, analog_sim, model_logits=None, f
         abest = int(np.argmax(ap)) if apmax > 0 else -1
         agree_a = float(1.0 - mr[abest]) if abest >= 0 else 0.0
         xfeat = [lv * (1.0 - mr), ap * (1.0 - mr), np.full(nc, agree), np.full(nc, agree_a),
-         np.full(nc, agree * lvmax), np.full(nc, float(np.corrcoef(lv, -mr)[0, 1]) if lv.std() > 1e-9 else 0.0)]
+                 np.full(nc, agree * lvmax), np.full(nc, float(np.corrcoef(lv, -mr)[0, 1]) if lv.std() > 1e-9 else 0.0)]
     else:
         xfeat = [np.zeros(nc, np.float32)] * 6
     if frag is not None:
@@ -797,19 +758,17 @@ def rank_features(cand_fp, cand_lib, analog_fp, analog_sim, model_logits=None, f
     else:
         ffeat = [np.zeros(nc, np.float32)] * 4
     return np.column_stack([
-     lv, _rank_norm(lv), np.full(nc, lvmax), lv - lvmax, (lv > 0).astype(float),
-     ap, _rank_norm(ap), np.full(nc, apmax), ap - apmax,
-     a1, best_tan, top_tan, mean_tan, np.full(nc, top_sim),
-     np.full(nc, np.log(max(nc, 1))),
-     *mfeat, *ffeat, *xfeat,
+        lv, _rank_norm(lv), np.full(nc, lvmax), lv - lvmax, (lv > 0).astype(float),
+        ap, _rank_norm(ap), np.full(nc, apmax), ap - apmax,
+        a1, best_tan, top_tan, mean_tan, np.full(nc, top_sim),
+        np.full(nc, np.log(max(nc, 1))),
+        *mfeat, *ffeat, *xfeat,
     ]).astype(np.float32)
 
-
 AMU = {'C': 12.0, 'H': 1.00782503207, 'N': 14.0030740048, 'O': 15.9949146196, 'P': 30.97376163,
- 'S': 31.97207100, 'F': 18.99840322, 'Cl': 34.96885268, 'Br': 78.9183371, 'I': 126.904473,
- 'Na': 22.9897692809, 'K': 38.96370668, 'Si': 27.9769265325, 'B': 11.0093054, 'Se': 79.9165213}
+       'S': 31.97207100, 'F': 18.99840322, 'Cl': 34.96885268, 'Br': 78.9183371, 'I': 126.904473,
+       'Na': 22.9897692809, 'K': 38.96370668, 'Si': 27.9769265325, 'B': 11.0093054, 'Se': 79.9165213}
 H = AMU['H']
-
 
 def mol_graph(smi):
     from rdkit import Chem, RDLogger
@@ -823,7 +782,6 @@ def mol_graph(smi):
     if (w == 0).any(): return None
     bonds = [(b.GetBeginAtomIdx(), b.GetEndAtomIdx()) for b in m.GetBonds()]
     return w, bonds, n
-
 
 def _components(n, bonds, drop):
     adj = [[] for _ in range(n)]
@@ -840,7 +798,6 @@ def _components(n, bonds, drop):
                 if not seen[v]: seen[v] = True; stack.append(v); cur.append(v)
         comps.append(cur)
     return comps
-
 
 def fragment_masses(smi, max_breaks=2, max_bonds=34):
     g = mol_graph(smi)
@@ -859,19 +816,16 @@ def fragment_masses(smi, max_breaks=2, max_bonds=34):
                     out.add(float(w[c].sum()))
     return np.array(sorted(out))
 
-
 def frag_masses_safe(smi):
     try: return fragment_masses(smi)
     except Exception: return np.zeros(0)
 
-
 CARRIERS = {
- "[M+H]+": (PROTON,), "[M-H2O+H]+": (PROTON,), "[M-2H2O+H]+": (PROTON,),
- "[M+NH4]+": (PROTON, NH4 - E), "[M+Na]+": (PROTON, MASS['Na'] - E), "[M+K]+": (PROTON, MASS['K'] - E),
- "[M-H]-": (-PROTON,), "[M-H2O-H]-": (-PROTON,), "[M+CH2O2-H]-": (-PROTON, FORMATE - PROTON),
- "[M+Cl]-": (-PROTON, MASS['Cl'] + E),
+    "[M+H]+": (PROTON,), "[M-H2O+H]+": (PROTON,), "[M-2H2O+H]+": (PROTON,),
+    "[M+NH4]+": (PROTON, NH4 - E), "[M+Na]+": (PROTON, MASS['Na'] - E), "[M+K]+": (PROTON, MASS['K'] - E),
+    "[M-H]-": (-PROTON,), "[M-H2O-H]-": (-PROTON,), "[M+CH2O2-H]-": (-PROTON, FORMATE - PROTON),
+    "[M+Cl]-": (-PROTON, MASS['Cl'] + E),
 }
-
 
 def explain_score_adduct(frag_mass, peak_mz, peak_int, adduct, tol=0.01, h_shifts=(-2, -1, 0, 1, 2)):
     if len(frag_mass) == 0 or len(peak_mz) == 0: return 0.0
@@ -885,7 +839,6 @@ def explain_score_adduct(frag_mass, peak_mz, peak_int, adduct, tol=0.01, h_shift
         k = np.clip(idx + off, 0, len(ion) - 1)
         ok |= np.abs(ion[k] - peak_mz) <= tol
     return float(w[ok].sum() / tot)
-
 
 def explain_score(frag_mass, peak_mz, peak_int, mode=1.0, tol=0.01, h_shifts=(-2, -1, 0, 1, 2)):
     if len(frag_mass) == 0 or len(peak_mz) == 0: return 0.0
@@ -903,19 +856,18 @@ def explain_score(frag_mass, peak_mz, peak_int, mode=1.0, tol=0.01, h_shifts=(-2
     return float(w[ok].sum() / tot)
 ''',
 
-'eng/pv_fp.py': '''"""Spectrum -> fingerprint model (prvsiyan FPNet), kept apart so CPU worker processes never import torch."""
+'eng/pv_fp.py': '''"""Spectrum -> fingerprint model (FPNet)."""
 import math
 import numpy as np
 import torch, torch.nn as nn, torch.nn.functional as F
 
 FP_MAX_PEAKS = 128
 ADDUCT_LIST = ["[M+H]+", "[M+NH4]+", "[M+Na]+", "[M+K]+", "[M-H2O+H]+", "[M-2H2O+H]+", "[M]+",
- "[M-H]-", "[M-H2O-H]-", "[M+CH2O2-H]-", "[M+C2H4O2-H]-", "[M+Cl]-", "[M]-",
- "[M+2H]2+", "[M-2H]-", "[2M+H]+", "[2M+Na]+", "[2M+NH4]+", "[2M-H]-", "[2M+K]+",
- "[2M+CH2O2-H]-", "[2M+C2H4O2-H]-", "[2M+Na-2H]-", "[M+Na-2H]-", "[M-H2O]+", "<unk>"]
+               "[M-H]-", "[M-H2O-H]-", "[M+CH2O2-H]-", "[M+C2H4O2-H]-", "[M+Cl]-", "[M]-",
+               "[M+2H]2+", "[M-2H]-", "[2M+H]+", "[2M+Na]+", "[2M+NH4]+", "[2M-H]-", "[2M+K]+",
+               "[2M+CH2O2-H]-", "[2M+C2H4O2-H]-", "[2M+Na-2H]-", "[M+Na-2H]-", "[M-H2O]+", "<unk>"]
 ADDUCT_IX = {a: i for i, a in enumerate(ADDUCT_LIST)}
 INSTR_LIST = ["timsTOF", "Orbitrap", "QTOF", "IT", "other"]
-
 
 def instr_family(s):
     if s is None: return 4
@@ -925,7 +877,6 @@ def instr_family(s):
     if 'tof' in t: return 2
     if 'trap' in t or 'qq' in t: return 3
     return 4
-
 
 def prep_peaks(mz, inten, prec_mz, max_peaks=FP_MAX_PEAKS, floor=1e-3, win=50.0, per_win=8):
     mz = np.asarray(mz, np.float64); it = np.asarray(inten, np.float64)
@@ -957,18 +908,15 @@ def prep_peaks(mz, inten, prec_mz, max_peaks=FP_MAX_PEAKS, floor=1e-3, win=50.0,
     v = np.sqrt(it / it.max())
     return mz.astype(np.float32), v.astype(np.float32)
 
-
 class SinEmb(nn.Module):
     def __init__(self, dim, lo=-2.0, hi=3.2, power=1.0):
         super().__init__()
         n = dim // 2
         wav = torch.pow(10.0, (hi - lo) * torch.pow(torch.linspace(0, 1, n), power) + lo)
         self.register_buffer('inv', (2 * math.pi) / wav)
-
     def forward(self, x):
         a = x.unsqueeze(-1) * self.inv
         return torch.cat([torch.sin(a), torch.cos(a)], -1)
-
 
 class Block(nn.Module):
     def __init__(self, d, h, drop):
@@ -977,7 +925,6 @@ class Block(nn.Module):
         self.n2 = nn.LayerNorm(d)
         self.ff = nn.Sequential(nn.Linear(d, 4 * d), nn.GELU(), nn.Dropout(drop), nn.Linear(4 * d, d))
         self.drop = nn.Dropout(drop)
-
     def forward(self, x, pad):
         B, N, D = x.shape; y = self.n1(x)
         q, k, v = self.qkv(y).view(B, N, 3, self.h, D // self.h).permute(2, 0, 3, 1, 4)
@@ -985,7 +932,6 @@ class Block(nn.Module):
         a = F.scaled_dot_product_attention(q, k, v, attn_mask=m)
         x = x + self.drop(self.o(a.transpose(1, 2).reshape(B, N, D)))
         return x + self.drop(self.ff(self.n2(x)))
-
 
 class FPNet(nn.Module):
     def __init__(self, nbits, d=512, layers=6, heads=8, drop=0.1):
@@ -1001,14 +947,13 @@ class FPNet(nn.Module):
         self.blocks = nn.ModuleList([Block(d, heads, drop) for _ in range(layers)])
         self.norm = nn.LayerNorm(d)
         self.head = nn.Sequential(nn.Linear(2 * d, 2048), nn.GELU(), nn.Dropout(drop), nn.Linear(2048, nbits))
-
     def forward(self, mz, it, pad, prec, ad, ins, ce, mode):
         B, N = mz.shape
         nl = (prec[:, None] - mz).clamp(min=0)
         p = self.pk(torch.cat([self.mz_emb(mz), self.nl_emb(nl), it.unsqueeze(-1)], -1))
         g = self.gl(torch.cat([self.prec_emb(prec),
-         (ce / 100.0).unsqueeze(-1), mode.unsqueeze(-1),
-         torch.log1p(prec).unsqueeze(-1) / 10.0], -1)) + self.ad(ad) + self.ins(ins)
+                              (ce / 100.0).unsqueeze(-1), mode.unsqueeze(-1),
+                              torch.log1p(prec).unsqueeze(-1) / 10.0], -1)) + self.ad(ad) + self.ins(ins)
         x = torch.cat([g.unsqueeze(1), p], 1)
         pad = torch.cat([torch.zeros(B, 1, dtype=torch.bool, device=pad.device), pad], 1)
         for b in self.blocks: x = b(x, pad)
@@ -1018,7 +963,6 @@ class FPNet(nn.Module):
         mean = (x[:, 1:] * msk).sum(1) / msk.sum(1).clamp(min=1)
         return self.head(torch.cat([cls, mean], -1))
 
-
 def load_fp_models(paths, dev):
     single, merged = [], []
     nbits = None
@@ -1026,10 +970,9 @@ def load_fp_models(paths, dev):
         ck = torch.load(pth, map_location='cpu', weights_only=False)
         net = FPNet(ck['nbits'], d=ck['d'], layers=ck['layers']).to(dev).eval()
         net.load_state_dict(ck['model'])
-        (merged if 'merged' in str(pth).replace('\\', '/').split('/')[-1] else single).append(net)
+        (merged if 'merged' in str(pth).replace('\\\\', '/').split('/')[-1] else single).append(net)
         nbits = ck['nbits']
     return single, merged, nbits
-
 
 def merge_peaks(specs):
     specs = [(a, b) for a, b in specs if len(a)]
@@ -1044,7 +987,6 @@ def merge_peaks(specs):
             else: keep[j] = False
     return mz[keep], it[keep]
 
-
 @torch.no_grad()
 def logits_batch(P, nets, dev, prec, adduct, instr, ce, mode):
     keep = [i for i, (a, _) in enumerate(P) if len(a)]
@@ -1056,13 +998,12 @@ def logits_batch(P, nets, dev, prec, adduct, instr, ce, mode):
         mz[i, :len(a)] = a; it[i, :len(b)] = b; pad[i, :len(a)] = False
     T = lambda x: torch.as_tensor(x, device=dev)
     args = (T(mz), T(it), T(pad),
-     T(np.asarray(prec, np.float32)[keep]),
-     T(np.array([ADDUCT_IX.get(a, ADDUCT_IX['<unk>']) for a in np.asarray(adduct, object)[keep]])),
-     T(np.array([instr_family(s) for s in np.asarray(instr, object)[keep]])),
-     T(np.asarray(ce, np.float32)[keep]),
-     T(np.asarray(mode, np.float32)[keep]))
+            T(np.asarray(prec, np.float32)[keep]),
+            T(np.array([ADDUCT_IX.get(a, ADDUCT_IX['<unk>']) for a in np.asarray(adduct, object)[keep]])),
+            T(np.array([instr_family(s) for s in np.asarray(instr, object)[keep]])),
+            T(np.asarray(ce, np.float32)[keep]),
+            T(np.asarray(mode, np.float32)[keep]))
     return np.mean([n(*args).float().mean(0).cpu().numpy() for n in nets], axis=0)
-
 
 def molecule_logits(models, specs, prec, adduct, instr, ce, mode):
     single, merged, dev = models
@@ -1080,25 +1021,13 @@ def molecule_logits(models, specs, prec, adduct, instr, ce, mode):
     return np.mean(out, axis=0) if out else None
 ''',
 
-'frag_rescore.py': '''"""Untrained MetFrag-lite re-scorer: how much MS/MS intensity a candidate's <=2-bond-cleavage fragments explain.
-
-Independent of pv.py (same idea as pv.fragment_masses / explain_score_adduct, new code): enumerate the neutral masses
-of the connected pieces left after removing 1 or 2 bonds of the heavy-atom graph (implicit H stay on their atom),
-remember the fewest cleavages that give each mass, then match every peak against
-`neutral fragment + dh*H + charge carrier` for dh in `h_shifts` and the carriers the precursor adduct allows.
-A peak's credit is the weight of its cheapest explanation (1 for 0/1 cleavages, `w2` for 2, `w3` for 3),
-and a spectrum's score is the credited share of its (weighted) intensity. Defaults follow the forum ablation on a
-241-structure same-formula isomer panel (+0.065 MRR over the common baseline): w2=0.6, linear intensity,
-tol 0.005 Da, H shifts -2..+3, at most 2 cleavages. `BASELINE_CFG` is the common/pv.py-style setting.
-
- score_molecule(spectra, cand_smiles, cfg=None, cache=None) -> list[float | None]
-"""
+'frag_rescore.py': '''"""Untrained MetFrag-lite re-scorer."""
 from __future__ import annotations
 import numpy as np
 
 AMU = {'C': 12.0, 'H': 1.00782503207, 'N': 14.0030740048, 'O': 15.9949146196, 'P': 30.97376163,
- 'S': 31.97207100, 'F': 18.99840322, 'Cl': 34.96885268, 'Br': 78.9183371, 'I': 126.904473,
- 'Na': 22.9897692809, 'K': 38.96370668, 'Si': 27.9769265325, 'B': 11.0093054, 'Se': 79.9165213}
+       'S': 31.97207100, 'F': 18.99840322, 'Cl': 34.96885268, 'Br': 78.9183371, 'I': 126.904473,
+       'Na': 22.9897692809, 'K': 38.96370668, 'Si': 27.9769265325, 'B': 11.0093054, 'Se': 79.9165213}
 H = AMU['H']
 E = 0.00054857990
 PROTON = H - E
@@ -1107,38 +1036,25 @@ NH4 = AMU['N'] + 4 * H
 FORMATE = AMU['C'] + 2 * H + 2 * AMU['O']
 
 CARRIERS = {
- '[M+H]+': (PROTON,), '[M-H2O+H]+': (PROTON,), '[M-2H2O+H]+': (PROTON,),
- '[M+NH4]+': (PROTON, NH4 - E), '[M+Na]+': (PROTON, AMU['Na'] - E), '[M+K]+': (PROTON, AMU['K'] - E),
- '[M-H]-': (-PROTON,), '[M-H2O-H]-': (-PROTON,), '[M+CH2O2-H]-': (-PROTON, FORMATE - PROTON),
- '[M+Cl]-': (-PROTON, AMU['Cl'] + E),
+    '[M+H]+': (PROTON,), '[M-H2O+H]+': (PROTON,), '[M-2H2O+H]+': (PROTON,),
+    '[M+NH4]+': (PROTON, NH4 - E), '[M+Na]+': (PROTON, AMU['Na'] - E), '[M+K]+': (PROTON, AMU['K'] - E),
+    '[M-H]-': (-PROTON,), '[M-H2O-H]-': (-PROTON,), '[M+CH2O2-H]-': (-PROTON, FORMATE - PROTON),
+    '[M+Cl]-': (-PROTON, AMU['Cl'] + E),
 }
 
 DEFAULT_CFG = dict(
- w1=1.0,
- w2=0.6,
- w3=0.3,
- intensity='linear',
- mz_power=0.0,
- tol=0.005,
- h_shifts=tuple(range(-2, 4)),
- max_breaks=2,
- max_bonds_2=100,
- max_bonds_3=40,
+    w1=1.0, w2=0.6, w3=0.3, intensity='linear', mz_power=0.0, tol=0.005,
+    h_shifts=tuple(range(-2, 4)), max_breaks=2, max_bonds_2=100, max_bonds_3=40,
 )
 BASELINE_CFG = dict(DEFAULT_CFG, w2=1.0, intensity='sqrt', tol=0.01, h_shifts=tuple(range(-2, 3)))
-
 
 def resolve_cfg(cfg=None):
     out = dict(DEFAULT_CFG)
     for k, v in (cfg or {}).items():
-        if k not in out:
-            raise KeyError(f'frag_rescore: unknown cfg key {k!r}')
+        if k not in out: raise KeyError(f'frag_rescore: unknown cfg key {k!r}')
         out[k] = v
     out['h_shifts'] = tuple(int(d) for d in out['h_shifts'])
-    if not 1 <= int(out['max_breaks']) <= 3:
-        raise ValueError('frag_rescore: max_breaks must be 1, 2 or 3')
     return out
-
 
 def _find(parent, a):
     while parent[a] != a:
@@ -1146,44 +1062,29 @@ def _find(parent, a):
         a = parent[a]
     return a
 
-
 def _emit_components(n, w, ea, eb, removed, parent, acc, out_m, out_k, cnt, k):
-    for a in range(n):
-        parent[a] = a
-        acc[a] = 0.0
+    for a in range(n): parent[a] = a; acc[a] = 0.0
     ncomp = n
     for e in range(ea.shape[0]):
-        if removed[e]:
-            continue
-        ra = _find(parent, ea[e])
-        rb = _find(parent, eb[e])
-        if ra != rb:
-            parent[ra] = rb
-            ncomp -= 1
-    if ncomp < 2:
-        return cnt
+        if removed[e]: continue
+        ra = _find(parent, ea[e]); rb = _find(parent, eb[e])
+        if ra != rb: parent[ra] = rb; ncomp -= 1
+        if ncomp < 2: return cnt
     for a in range(n):
-        r = _find(parent, a)
-        acc[r] += w[a]
+        r = _find(parent, a); acc[r] += w[a]
     for a in range(n):
         if parent[a] == a:
-            out_m[cnt] = acc[a]
-            out_k[cnt] = k
-            cnt += 1
+            out_m[cnt] = acc[a]; out_k[cnt] = k; cnt += 1
     return cnt
-
 
 def _enumerate(n, w, ea, eb, max_breaks, base_components):
     nb = ea.shape[0]
     n2 = nb * (nb - 1) // 2 if max_breaks >= 2 else 0
     n3 = nb * (nb - 1) * (nb - 2) // 6 if max_breaks >= 3 else 0
     cap = base_components + (base_components + 1) * nb + (base_components + 2) * n2 + (base_components + 3) * n3
-    out_m = np.empty(cap, np.float64)
-    out_k = np.empty(cap, np.int8)
-    parent = np.empty(n, np.int64)
-    acc = np.empty(n, np.float64)
-    removed = np.zeros(nb, np.bool_)
-    cnt = 0
+    out_m = np.empty(cap, np.float64); out_k = np.empty(cap, np.int8)
+    parent = np.empty(n, np.int64); acc = np.empty(n, np.float64)
+    removed = np.zeros(nb, np.bool_); cnt = 0
     for i in range(nb):
         removed[i] = True
         cnt = _emit_components(n, w, ea, eb, removed, parent, acc, out_m, out_k, cnt, 1)
@@ -1200,7 +1101,6 @@ def _enumerate(n, w, ea, eb, max_breaks, base_components):
         removed[i] = False
     return out_m[:cnt], out_k[:cnt]
 
-
 try:
     from numba import njit
     _find = njit(cache=True, nogil=True)(_find)
@@ -1210,143 +1110,106 @@ try:
 except Exception:
     HAVE_NUMBA = False
 
-
 def mol_graph(smi):
     from rdkit import Chem, RDLogger
     RDLogger.DisableLog('rdApp.*')
-    try:
-        m = Chem.MolFromSmiles(smi) if isinstance(smi, str) and smi else None
-    except Exception:
-        m = None
-    if m is None or m.GetNumAtoms() == 0:
-        return None
+    try: m = Chem.MolFromSmiles(smi) if isinstance(smi, str) and smi else None
+    except Exception: m = None
+    if m is None or m.GetNumAtoms() == 0: return None
     pt = Chem.GetPeriodicTable()
     w = np.empty(m.GetNumAtoms(), np.float64)
     for a in m.GetAtoms():
-        s = a.GetSymbol()
-        am = AMU.get(s)
-        if am is None:
-            am = pt.GetMostCommonIsotopeMass(s)
+        s = a.GetSymbol(); am = AMU.get(s)
+        if am is None: am = pt.GetMostCommonIsotopeMass(s)
         w[a.GetIdx()] = am + a.GetTotalNumHs() * H
     ea = np.array([b.GetBeginAtomIdx() for b in m.GetBonds()], np.int64)
     eb = np.array([b.GetEndAtomIdx() for b in m.GetBonds()], np.int64)
     return w, ea, eb, len(Chem.GetMolFrags(m))
 
-
 def fragment_levels(smi, max_breaks=2, max_bonds_2=100, max_bonds_3=40):
     g = mol_graph(smi)
-    if g is None:
-        return None
+    if g is None: return None
     w, ea, eb, npieces = g
-    nb = len(ea)
-    mb = int(max_breaks)
-    if mb >= 3 and nb > max_bonds_3:
-        mb = 2
-    if mb >= 2 and nb > max_bonds_2:
-        mb = 1
+    nb = len(ea); mb = int(max_breaks)
+    if mb >= 3 and nb > max_bonds_3: mb = 2
+    if mb >= 2 and nb > max_bonds_2: mb = 1
     levels = [np.array([w.sum()])]
     if npieces > 1:
         from rdkit import Chem
         m = Chem.MolFromSmiles(smi)
         levels = [np.unique(np.concatenate([[w.sum()], [w[list(ix)].sum() for ix in Chem.GetMolFrags(m)]]))]
-    if nb == 0:
-        return levels + [np.zeros(0) for _ in range(int(max_breaks))]
+    if nb == 0: return levels + [np.zeros(0) for _ in range(int(max_breaks))]
     fm, fk = _enumerate(len(w), w, ea, eb, mb, npieces)
-    fm = np.concatenate([levels[0], fm])
-    fk = np.concatenate([np.zeros(len(levels[0]), np.int8), fk])
-    key = np.round(fm, 5)
-    order = np.lexsort((fk, key))
+    fm = np.concatenate([levels[0], fm]); fk = np.concatenate([np.zeros(len(levels[0]), np.int8), fk])
+    key = np.round(fm, 5); order = np.lexsort((fk, key))
     key, fm, fk = key[order], fm[order], fk[order]
-    first = np.ones(len(key), bool)
-    first[1:] = key[1:] != key[:-1]
+    first = np.ones(len(key), bool); first[1:] = key[1:] != key[:-1]
     fm, fk = fm[first], fk[first]
     return [np.sort(fm[fk == k]) for k in range(int(max_breaks) + 1)]
 
-
 def _carriers(adduct, mode):
     c = CARRIERS.get(adduct)
-    if c is not None:
-        return c
-    if isinstance(adduct, str) and adduct.endswith('-'):
-        return (-PROTON,)
-    if isinstance(adduct, str) and adduct.endswith('+'):
-        return (PROTON,)
+    if c is not None: return c
+    if isinstance(adduct, str) and adduct.endswith('-'): return (-PROTON,)
+    if isinstance(adduct, str) and adduct.endswith('+'): return (PROTON,)
     return (PROTON,) if (mode or 1) > 0 else (-PROTON,)
-
 
 def _prep_spectrum(s, c):
     mz = np.asarray(s.get('mz', ()), np.float64).ravel()
     it = np.asarray(s.get('it', ()), np.float64).ravel()
-    n = min(len(mz), len(it))
-    mz, it = mz[:n], it[:n]
-    ok = np.isfinite(mz) & np.isfinite(it) & (it > 0)
-    mz, it = mz[ok], it[ok]
-    if len(mz) == 0:
-        return None
+    n = min(len(mz), len(it)); mz, it = mz[:n], it[:n]
+    ok = np.isfinite(mz) & np.isfinite(it) & (it > 0); mz, it = mz[ok], it[ok]
+    if len(mz) == 0: return None
     p = c['intensity']
     iw = it if p == 'linear' else np.sqrt(it) if p == 'sqrt' else it ** float(p)
     if c['mz_power']:
         prec = float(s.get('prec') or mz.max())
         iw = iw * (mz / prec) ** float(c['mz_power'])
     tot = iw.sum()
-    if not tot > 0:
-        return None
+    if not tot > 0: return None
     shifts = np.array([car + dh * H for car in _carriers(s.get('adduct'), s.get('mode')) for dh in c['h_shifts']])
     q = (mz[None, :] - shifts[:, None]).ravel()
     return iw / tot, q, len(shifts), len(mz)
-
 
 def _score_spectrum(levels, weights, prep, tol):
     iw, q, ns, npk = prep
     best = np.zeros(npk)
     for arr, wt in zip(levels, weights):
-        if len(arr) == 0 or wt <= 0:
-            continue
-        a = np.searchsorted(arr, q - tol, 'left')
-        b = np.searchsorted(arr, q + tol, 'right')
+        if len(arr) == 0 or wt <= 0: continue
+        a = np.searchsorted(arr, q - tol, 'left'); b = np.searchsorted(arr, q + tol, 'right')
         hit = (b > a).reshape(ns, npk).any(axis=0)
         best = np.where(hit & (wt > best), wt, best)
     return float(iw @ best)
 
+def candidate_levels(smi, cfg=None, cache=None):
+    return _levels_cached(smi, resolve_cfg(cfg), cache)
 
 def _levels_cached(smi, c, cache):
     key = (smi, int(c['max_breaks']), int(c['max_bonds_2']), int(c['max_bonds_3']))
-    if cache is not None and key in cache:
-        return cache[key]
-    try:
-        lv = fragment_levels(smi, c['max_breaks'], c['max_bonds_2'], c['max_bonds_3'])
-    except Exception:
-        lv = None
-    if cache is not None:
-        cache[key] = lv
+    if cache is not None and key in cache: return cache[key]
+    try: lv = fragment_levels(smi, c['max_breaks'], c['max_bonds_2'], c['max_bonds_3'])
+    except Exception: lv = None
+    if cache is not None: cache[key] = lv
     return lv
 
-
 def score_molecule(spectra, cand_smiles, cfg=None, cache=None):
-    c = resolve_cfg(cfg)
-    cache = {} if cache is None else cache
+    c = resolve_cfg(cfg); cache = {} if cache is None else cache
     weights = [1.0, float(c['w1']), float(c['w2']), float(c['w3'])][: int(c['max_breaks']) + 1]
     preps = [p for p in (_prep_spectrum(s, c) for s in (spectra or [])) if p is not None]
-    tol = float(c['tol'])
-    out = []
+    tol = float(c['tol']); out = []
     for smi in cand_smiles:
         lv = _levels_cached(smi, c, cache)
-        if lv is None:
-            out.append(None)
-            continue
-        if not preps:
-            out.append(0.0)
-            continue
+        if lv is None: out.append(None); continue
+        if not preps: out.append(0.0); continue
         out.append(float(np.mean([_score_spectrum(lv, weights, p, tol) for p in preps])))
     return out
-
 
 def warmup():
     fragment_levels('CCOC(=O)c1ccccc1O')
     return HAVE_NUMBA
 ''',
 
-'fusion_core.py': '''"""Final-stage fusion for casmi26-ours: ICE/GLACIER re-ranking -> gated PubChem merge -> engine-2 RRF fusion."""
+'fusion_core.py': '''"""Final-stage fusion for casmi26-ours."""
 import copy
 import numpy as np
 import pandas as pd
@@ -1354,12 +1217,10 @@ import pandas as pd
 DEFAULTS = dict(LIB_TAU=0.9, REL_TH=600.0, SLOTS_AGG=[2, 4, 6, 8, 10], SLOTS_GENTLE=[4, 8, 12, 16, 20], TOPN=60,
  ICE_LAM=1.0, GL_LAM=1.0, ICE_PC=True, FUSE_ALPHA=0.6, FUSE_KRR=3.0, FUSE_N=40, FALLBACK='CCO',
  POP_MU=0.0, FUSE_ENG_K=40, FRAG_LAM=0.0, FRAG_MODE='all',
- POST_ICE_LAM=None, POST_GL_LAM=None,
- FUSE_SKIP_LIB=None,
- ICE_LAM_LIB=None, GL_LAM_LIB=None,
- FILL_25=False,
- POP_LIB_OFF=False, FRAG_LIB_OFF=False)
-
+ POST_ICE_LAM=None, POST_GL_LAM=None, FUSE_SKIP_LIB=None,
+ ICE_LAM_LIB=None, GL_LAM_LIB=None, FILL_25=False,
+ POP_LIB_OFF=False, FRAG_LIB_OFF=False, GATE_TAU=None, FUSE_MIN_LIB=None,
+ PC_FWD_T1=None, PC_FWD_N=25)
 
 def popularity_reorder(smis, keys, scs, forms, pids, pool_pop, mu):
     s = np.asarray(scs, np.float64); z = (s - s.mean()) / (s.std() + 1e-9)
@@ -1369,7 +1230,6 @@ def popularity_reorder(smis, keys, scs, forms, pids, pool_pop, mu):
     o[isg] = np.where(isg)[0]; o[~isg] = pool_i[np.argsort(-f[pool_i], kind='stable')]
     return ([smis[i] for i in o], [keys[i] for i in o], [float(f[i]) for i in o],
      [forms[i] + ('|gen' if isg[i] else '') for i in o], [int(pid[i]) for i in o])
-
 
 def merge(base, base_keys, pc, pc_keys, slots, n=25):
     bk = set(base_keys)
@@ -1384,6 +1244,18 @@ def merge(base, base_keys, pc, pc_keys, slots, n=25):
             out.append(pcs[pj]); pj += 1
     return out
 
+def forward_margin(prop, base, scores, n=25, formula=None):
+    cand = list(base[:n])
+    if formula is not None:
+        fp = formula(prop)
+        cand = [b for b in cand if formula(b) == fp]
+    ok = lambda x: isinstance(x, (int, float)) and np.isfinite(x)
+    margins = []
+    for d in scores:
+        v = d.get(prop) if d else None
+        bs = [x for x in (d.get(b) for b in cand) if ok(x)] if ok(v) else []
+        if bs: margins.append(v - max(bs))
+    return min(margins) if margins else None
 
 def fuse_rrf(v_smis, e_smis, e_keys, score_key, alpha, krr, n):
     sc, smi_of = {}, {}
@@ -1391,12 +1263,10 @@ def fuse_rrf(v_smis, e_smis, e_keys, score_key, alpha, krr, n):
         k = score_key(s) or s
         sc[k] = sc.get(k, 0.0) + 1.0 / (krr + r); smi_of.setdefault(k, s)
     for r, (s, k) in enumerate(zip(e_smis, e_keys), 1):
-        if not k:
-            continue
+        if not k: continue
         sc[k] = sc.get(k, 0.0) + alpha / (krr + r); smi_of.setdefault(k, s)
     order = sorted(sc, key=lambda k: -sc[k])[:n]
     return [smi_of[k] for k in order], order, [sc[k] for k in order]
-
 
 def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sample_ids,
  ice_fuse=None, gl_fuse=None, score_key=None, formula=None, log=print, pool_pop=None,
@@ -1413,8 +1283,7 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
         return g if isinstance(g, dict) and any(v is not None for v in g.values()) else {}
 
     def gl_rerank(order0, smis, keys, scs, forms, ice, gl, top_n, tag=''):
-        if not gl or gl_fuse is None:
-            return order0
+        if not gl or gl_fuse is None: return order0
         try:
             o = gl_fuse.rerank_multi(smis, keys, scs, forms, [ice, gl], [ICE_LAM, GL_LAM], top_n=top_n)
         except Exception as e:
@@ -1430,13 +1299,10 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
 
     def frag_rerank(m, smis, keys, scs, forms, ice, gl, top_n):
         fr = (frag_scores or {}).get(str(m), {})
-        if c['FRAG_LAM'] <= 0 or not covered(fr) or gl_fuse is None:
-            return None
-        if c['FRAG_LIB_OFF'] and lib_of_m.get(m, lib_of_m.get(str(m), 0.0)) >= LIB_TAU:
-            return None
+        if c['FRAG_LAM'] <= 0 or not covered(fr) or gl_fuse is None: return None
+        if c['FRAG_LIB_OFF'] and lib_of_m.get(m, lib_of_m.get(str(m), 0.0)) >= GATE_TAU: return None
         if c['FRAG_MODE'] == 'gap':
-            if covered(ice):
-                return None
+            if covered(ice): return None
             terms, lams = [fr], [c['FRAG_LAM']]
         else:
             terms = [d for d in (ice, gl) if covered(d)] + [fr]
@@ -1444,8 +1310,10 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
         stats.setdefault('frag', {'molecules': 0})['molecules'] += 1
         return gl_fuse.rerank_multi(smis, keys, scs, forms, terms, lams, top_n=top_n)
 
+    GATE_TAU = LIB_TAU if c['GATE_TAU'] is None else c['GATE_TAU']
+
     def lam_pair(lib_max):
-        lib = lib_max >= LIB_TAU
+        lib = lib_max >= GATE_TAU
         il = c['ICE_LAM_LIB'] if (lib and c['ICE_LAM_LIB'] is not None) else c['ICE_LAM']
         gll = c['GL_LAM_LIB'] if (lib and c['GL_LAM_LIB'] is not None) else c['GL_LAM']
         return il, gll
@@ -1453,13 +1321,12 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
     extra = {}
     lib_of_m = {m: v[2] for m, v in base.items()}
 
-    # ---- stage A: ICE (+GL) re-rank of base and PubChem
     for m in list(base):
         v = base[m]
         smis, keys, lib_max, scs, forms = list(v[0][:TOPN]), list(v[1][:TOPN]), v[2], list(v[3][:TOPN]), list(v[4][:TOPN])
         pids = list(v[5][:TOPN]) if len(v) > 5 else None
         ICE_LAM, GL_LAM = lam_pair(lib_max)
-        pop_on = c['POP_MU'] > 0 and not (c['POP_LIB_OFF'] and lib_max >= LIB_TAU)
+        pop_on = c['POP_MU'] > 0 and not (c['POP_LIB_OFF'] and lib_max >= GATE_TAU)
         if pop_on and pool_pop is not None and pids is not None and len(scs) > 1:
             try:
                 smis, keys, scs, forms, pids = popularity_reorder(smis, keys, scs, forms, pids, pool_pop, c['POP_MU'])
@@ -1490,8 +1357,7 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
         p = pc.get(m) if c['ICE_PC'] else None
         if ice_fuse is not None and p and p.get('pc') and lib_max < LIB_TAU and ice:
             try:
-                if not p.get('pc_form'):
-                    p['pc_form'] = [formula(x) for x in p['pc']]
+                if not p.get('pc_form'): p['pc_form'] = [formula(x) for x in p['pc']]
                 o = ice_fuse.rerank(p['pc'], p['pc_keys'], p['pc_fz'], p['pc_form'], ice, lam=ICE_LAM, top_n=25)
                 o = gl_rerank(o, p['pc'], p['pc_keys'], p['pc_fz'], p['pc_form'], ice, gl, 25, 'pc_')
                 fz0 = p['pc_fz'][0]
@@ -1501,7 +1367,6 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
             except Exception as e:
                 log('pc rerank failed', m, repr(e))
 
-    # ---- stage B: gated PubChem merge
     rows = {}
     for mid in mol_order:
         smis, keys, lib_max = base.get(mid, ([], [], 0.0))
@@ -1513,32 +1378,35 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
             ms['untouched'] += 1; final = smis
         else:
             bp = p.get('best_pool_fz')
-            rel = p['pc_fz'][0] - bp if bp is not None and np.isfinite(bp) else 1e9
+            top = p['fz_top'] if p.get('fz_top') is not None else p['pc_fz'][0]
+            rel = top - bp if bp is not None and np.isfinite(bp) else 1e9
             aggressive = rel > c['REL_TH']
+            if not aggressive and c['PC_FWD_T1'] is not None:
+                bk = set(keys)
+                new = [s for s, k in zip(p['pc'], p['pc_keys']) if k not in bk]
+                fwd = forward_margin(new[0], smis, [ice_scores.get(str(mid), {}), gl_of(mid)], c['PC_FWD_N'], formula) if new else None
+                if fwd is not None and fwd > c['PC_FWD_T1']:
+                    aggressive = True; ms['fwd_early'] = ms.get('fwd_early', 0) + 1
             ms['aggressive' if aggressive else 'gentle'] += 1
             final = merge(smis, keys, p['pc'], p['pc_keys'], c['SLOTS_AGG'] if aggressive else c['SLOTS_GENTLE'])
-        if not final:
-            final = [c['FALLBACK']]
+        if not final: final = [c['FALLBACK']]
         rows[mid] = ';'.join(final[:25])
     v4 = [(mid, rows.get(mid, c['FALLBACK'])) for mid in sample_ids]
     lib_of = {m: v[2] for m, v in base.items()}
 
     def fill(mid, lst):
-        if not c['FILL_25'] or len(lst) >= 25:
-            return lst
+        if not c['FILL_25'] or len(lst) >= 25: return lst
         seen = {score_key(x) or x for x in lst}; out = list(lst)
         pool = list((eng.get(str(mid)) or {}).get('smiles', [])) + list((pc.get(mid) or {}).get('pc', [])) + list(extra.get(mid, []))
         for x in pool:
             k = score_key(x) or x
             if k not in seen:
                 seen.add(k); out.append(x)
-            if len(out) >= 25:
-                break
+            if len(out) >= 25: break
         stats.setdefault('fill', {'molecules': 0, 'added': 0})
         stats['fill']['molecules'] += int(len(out) > len(lst)); stats['fill']['added'] += len(out) - len(lst)
         return out
 
-    # ---- stage C: engine-2 fusion (+ ICE/GL on the fused list)
     if not eng:
         if c['FILL_25']:
             v4 = [(mid, ';'.join(fill(mid, [x for x in s.split(';') if x and x != c['FALLBACK']])) or c['FALLBACK'])
@@ -1552,8 +1420,9 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
         P_GL = GL_LAM if c['POST_GL_LAM'] is None else c['POST_GL_LAM']
         e = eng.get(str(mid))
         if c['FUSE_SKIP_LIB'] is not None and lib_of.get(mid, 0.0) >= c['FUSE_SKIP_LIB']:
-            e = None
-            stats['fuse']['skipped_lib'] = stats['fuse'].get('skipped_lib', 0) + 1
+            e = None; stats['fuse']['skipped_lib'] = stats['fuse'].get('skipped_lib', 0) + 1
+        if c['FUSE_MIN_LIB'] is not None and lib_of.get(mid, 0.0) < c['FUSE_MIN_LIB']:
+            e = None; stats['fuse']['skipped_nolib'] = stats['fuse'].get('skipped_nolib', 0) + 1
         if e and e.get('smiles'):
             K = int(c['FUSE_ENG_K'])
             fsm, fk, fsc = fuse_rrf(vs, e['smiles'][:K], e['keys'][:K], score_key, c['FUSE_ALPHA'], c['FUSE_KRR'], c['FUSE_N'])
@@ -1573,8 +1442,7 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
             if c['FRAG_LAM'] > 0:
                 try:
                     o = frag_rerank(mid, fsm0, fk0, fsc0, [formula(x) for x in fsm0], ice, gl_of(mid), len(fsm0))
-                    if o is not None:
-                        fsm = [fsm0[i] for i in o]
+                    if o is not None: fsm = [fsm0[i] for i in o]
                 except Exception as ex:
                     log('fused frag rerank failed', mid, repr(ex))
             stats['fuse']['top1_changed'] += int(bool(vs) and fsm[:1] != vs[:1])
@@ -1582,7 +1450,6 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
         vs = fill(mid, vs[:25])
         out.append((mid, ';'.join(vs[:25]) if vs else c['FALLBACK']))
     return pd.DataFrame(out, columns=['molecule_id', 'smiles']), stats
-
 
 def validate(sub, sample_ids, max_rank=25):
     assert len(sub) == len(sample_ids) and sub.molecule_id.is_unique and sub.smiles.notna().all()
@@ -1616,28 +1483,25 @@ if __name__ == '__main__':
     te['nm'] = chem.neutral_mass(te.precursor_mz.values.astype(np.float64), te.adduct.values)
     tasks, extra = [], {}
     groups = list(te.groupby('molecule_id', sort=False))
-    if MAXM:
-        groups = groups[:MAXM]
+    if MAXM: groups = groups[:MAXM]
     for mid, sub in groups:
         nms = sub.nm.values[np.isfinite(sub.nm.values)]
-        if not len(nms):
-            continue
+        if not len(nms): continue
         target = float(np.median(nms))
         spectra = []
         for r in sub.itertuples():
             ce = r.collision_energy_ev
             ce_arr = np.atleast_1d(np.asarray(ce, dtype=float)) if ce is not None else np.zeros(0)
             spectra.append(dict(mz=np.asarray(r.ms2_mzs, np.float64), it=np.asarray(r.ms2_normalized_intensities, np.float64),
-             mode=1 if r.ionization_mode == 'positive' else -1, adduct=r.adduct,
-             prec=float(r.precursor_mz), ce=float(ce_arr.mean()) if len(ce_arr) else np.nan,
-             ce_n=int(len(ce_arr)) if len(ce_arr) else 1))
+                                mode=1 if r.ionization_mode == 'positive' else -1, adduct=r.adduct,
+                                prec=float(r.precursor_mz), ce=float(ce_arr.mean()) if len(ce_arr) else np.nan,
+                                ce_n=int(len(ce_arr)) if len(ce_arr) else 1))
         spectra = spectra[:16]
         try:
             z = pc.molecule_logits(bank, spectra)
         except Exception as e:
             print('ERROR logits', mid, repr(e), flush=True); z = None
-        if z is None:
-            continue
+        if z is None: continue
         tol = target * 10e-6
         a = np.searchsorted(pmass, target - tol, 'left'); b = np.searchsorted(pmass, target + tol, 'right')
         if b <= a:
@@ -1656,9 +1520,9 @@ if __name__ == '__main__':
     import multiprocessing as mp
     ctx = mp.get_context('fork' if sys.platform != 'win32' else 'spawn')
     with ctx.Pool(NW, initializer=pc.init_worker, initargs=(PC_DIR, os.path.join(POOL_DIR, 'fp_bits.npy'),
-     os.path.join(POOL_DIR, 'pool_meta.parquet'), V3CODE)) as P:
+                  os.path.join(POOL_DIR, 'pool_meta.parquet'), V3CODE)) as P:
         for k, (mid, smis, fzs, keys, d) in enumerate(P.imap_unordered(pc.probe_one, tasks, chunksize=1)):
-            res[mid] = dict(pc=smis, pc_fz=fzs, pc_keys=keys, **extra[mid])
+            res[mid] = dict(pc=smis, pc_fz=fzs, pc_keys=keys, fz_top=(d or {}).get('fz_top'), **extra[mid])
             if (k + 1) % 25 == 0 or k + 1 == len(tasks):
                 print(f' pubchem {k+1}/{len(tasks)} {time.time()-T0:.0f}s', flush=True)
     json.dump(res, open(OUT, 'w'))
@@ -1672,9 +1536,9 @@ import numpy as np
 
 PC_N1 = int(os.environ.get('CASMI_PC_N1', 5000))
 PPM = 10.0
-K = 25
-_W = {}
+K = int(os.environ.get('CASMI_PC_K', 25))
 
+_W = {}
 
 def molecule_logits(bank, spectra):
     from casmi import chem, fpnet
@@ -1684,13 +1548,12 @@ def molecule_logits(bank, spectra):
         pm, pi = fpnet.prep_peaks(s['mz'], s['it'], s['prec'])
         ce_ok = s['ce'] is not None and not np.isnan(s['ce'])
         items_s.append(dict(mz=pm, it=pi, prec=float(s['prec']), adduct_ix=chem.adduct_index(s['adduct']),
-         ce=float(s['ce']) if ce_ok else 0.0, ce_known=1.0 if ce_ok else 0.0,
-         n_merged=min(int(s.get('ce_n', 1)), 8), mode=float(s['mode'])))
+                            ce=float(s['ce']) if ce_ok else 0.0, ce_known=1.0 if ce_ok else 0.0,
+                            n_merged=min(int(s.get('ce_n', 1)), 8), mode=float(s['mode'])))
     items_m = []
     for md in (1, -1):
         grp = [s for s in spectra if s['mode'] == md]
-        if not grp:
-            continue
+        if not grp: continue
         mm, ii = merge_spectra([(s['mz'], s['it']) for s in grp])
         prec = float(np.median([s['prec'] for s in grp]))
         pm, pi = fpnet.prep_peaks(mm, ii, prec)
@@ -1698,19 +1561,16 @@ def molecule_logits(bank, spectra):
         adducts = [s['adduct'] for s in grp]
         ad = max(adducts, key=adducts.count)
         items_m.append(dict(mz=pm, it=pi, prec=prec, adduct_ix=chem.adduct_index(ad),
-         ce=float(np.mean(ces)) if ces else 0.0, ce_known=1.0 if ce_ok else 0.0,
-         n_merged=min(sum(max(1, int(s.get('ce_n', 1))) for s in grp), 8), mode=float(md)))
-    if not items_s:
-        return None
+                            ce=float(np.mean(ces)) if ces else 0.0, ce_known=1.0 if ce_ok else 0.0,
+                            n_merged=min(sum(max(1, int(s.get('ce_n', 1))) for s in grp), 8), mode=float(md)))
+    if not items_s: return None
     zs, _ = bank.logits_el(items_s)
     zm, _ = bank.logits_el(items_m)
     return (0.5 * (zs.mean(0) + zm.mean(0))).astype(np.float32)
 
-
 def init_worker(pc_dir, bits_path, pool_meta_path, code_dir=None):
     import sys
-    if code_dir and code_dir not in sys.path:
-        sys.path.insert(0, code_dir)
+    if code_dir and code_dir not in sys.path: sys.path.insert(0, code_dir)
     import pandas as pd
     from casmi import chem
     _W['chem'] = chem
@@ -1726,17 +1586,14 @@ def init_worker(pc_dir, bits_path, pool_meta_path, code_dir=None):
     _W['ecfp4'] = r['gen'].GetMorganGenerator(radius=2, fpSize=4096)
     _W['Chem'] = r['Chem']
 
-
 def _window(target):
     tol = target * PPM * 1e-6
     a = int(np.searchsorted(_W['mass'], target - tol, 'left')); b = int(np.searchsorted(_W['mass'], target + tol, 'right'))
     off = np.asarray(_W['off'][a:b + 1]).astype(np.int64)
-    if b <= a:
-        return []
+    if b <= a: return []
     raw = bytes(_W['buf'][off[0]:off[-1]])
     base = off[0]
     return [raw[off[i] - base:off[i + 1] - base].decode('ascii') for i in range(b - a)]
-
 
 def probe_one(task):
     mid, target, z = task
@@ -1752,11 +1609,9 @@ def probe_one(task):
     E = np.zeros((n, len(raw_e)), np.float32); ok = np.zeros(n, bool)
     for i, s in enumerate(smis):
         m = Chem.MolFromSmiles(s)
-        if m is None:
-            continue
+        if m is None: continue
         E[i] = gen.GetFingerprintAsNumPy(m)[raw_e]; ok[i] = True
-    sc1 = E @ z_e
-    sc1[~ok] = -np.inf
+    sc1 = E @ z_e; sc1[~ok] = -np.inf
     n1 = min(PC_N1, int(ok.sum()))
     diag['n_pass1'] = n1
     if n1 == 0:
@@ -1767,8 +1622,7 @@ def probe_one(task):
     fz, idx = [], []
     for i in top1:
         fp = chem.raw_fingerprint(smis[i])
-        if fp is None:
-            continue
+        if fp is None: continue
         fz.append(float(fp[bits].astype(np.float32) @ z)); idx.append(int(i))
     diag['n_pass2'] = len(idx)
     order = np.argsort(-np.asarray(fz), kind='stable')
@@ -1777,27 +1631,348 @@ def probe_one(task):
         s = smis[idx[o]]
         k = chem.score_key(s)
         diag['n_keyed'] += 1
-        if k is None or k in seen:
-            continue
+        if k is None or k in seen: continue
         seen.add(k)
         if k in _W['pool_keys']:
             diag['n_in_pool'] += 1
             continue
         out.append(s); out_fz.append(float(fz[o])); out_k.append(k)
-        if len(out) >= K:
-            break
+        if len(out) >= K: break
     diag['n_listed'] = len(out)
     diag['secs'] = time.time() - t0
     return mid, out, out_fz, out_k, diag
+''',
+
+'pc_join.py': '''"""PubChem join: hand the best N PubChem-only candidates to the v1 engine as extra candidates (flag PC_JOIN_N; off = 0)."""
+from __future__ import annotations
+from typing import Callable, Dict, List, Optional, Sequence
+import numpy as np
+
+DEFAULTS = dict(PC_JOIN_N=0, PC_JOIN_ORDER='first', PC_JOIN_MAX_LIB=None, PC_JOIN_MIN_REL=None, PC_JOIN_SLOTS='all')
+
+def select_injection(pc: Optional[dict], n: int, lib_max: Optional[float] = None, max_lib: Optional[float] = None,
+ min_rel: Optional[float] = None, absent: Optional[bool] = None) -> List[int]:
+    if not pc or not pc.get('pc') or n <= 0: return []
+    if max_lib is not None and lib_max is not None and lib_max >= max_lib: return []
+    if absent is False: return []
+    idx = list(range(min(n, len(pc['pc']))))
+    if min_rel is not None:
+        bp = pc.get('best_pool_fz')
+        if bp is not None and np.isfinite(bp):
+            idx = [i for i in idx if pc['pc_fz'][i] - bp > min_rel]
+    return idx
+
+def split_for_slots(pc: Optional[dict], injected: Sequence[int], mode: str = 'all', k: int = 25) -> Optional[dict]:
+    if not pc or not pc.get('pc') or mode == 'none': return None
+    drop = set(injected) if mode == 'rest' else set()
+    keep = [i for i in range(len(pc['pc'])) if i not in drop][:k]
+    if not keep: return None
+    out = {kk: v for kk, v in pc.items() if kk not in ('pc', 'pc_fz', 'pc_keys', 'pc_form')}
+    out['pc'] = [pc['pc'][i] for i in keep]; out['pc_fz'] = [pc['pc_fz'][i] for i in keep]; out['pc_keys'] = [pc['pc_keys'][i] for i in keep]
+    if out.get('fz_top') is None: out['fz_top'] = pc['pc_fz'][0]
+    return out
+
+def inject_last(generated: Optional[list], records: Sequence[dict], pool_keys: set) -> List[dict]:
+    g = list(generated or [])
+    seen = set(pool_keys) | {x['key'] for x in g}
+    for r in records:
+        if r['key'] in seen: continue
+        seen.add(r['key']); g.append(r)
+    return g
+
+RANK_SOURCES = {'lib_max_rank': ('lib_max', 1, False), 'ap_rank': ('ap', 1, False), 'fz_rank': ('fz', 1, False), 'el_rank': ('el_sum', -1, False),
+ 'fr_rank': ('fr_int', 1, False), 'sf_rank': ('sf_int', 1, False), 'mass_ppm_rank': ('mass_ppm', -1, True)}
+
+def rank_two_tier(x: np.ndarray, tier: np.ndarray) -> np.ndarray:
+    n = len(x)
+    if n == 0: return np.zeros(0)
+    x = np.asarray(x, np.float64); tier = np.asarray(tier, np.int64)
+    o = np.lexsort((tier, -x)); xs = x[o]; ts = tier[o]
+    b = np.r_[True, (xs[1:] != xs[:-1]) | (ts[1:] != ts[:-1])]; bid = np.cumsum(b) - 1
+    st = np.flatnonzero(b); en = np.r_[st[1:], n]
+    r = np.empty(n); r[o] = ((st + en - 1) / 2.0)[bid]
+    return r / max(1, n - 1)
+
+def order_free_join(X: np.ndarray, names: Sequence[str], inj: Optional[np.ndarray] = None) -> np.ndarray:
+    names = list(names); X2 = np.array(X, np.float32, copy=True)
+    tier = np.zeros(len(X2), np.int64) if inj is None else np.asarray(inj).astype(np.int64)
+    for f, (src, sgn, ab) in RANK_SOURCES.items():
+        if f in names and src in names:
+            v = X2[:, names.index(src)].astype(np.float64)
+            X2[:, names.index(f)] = rank_two_tier(sgn * (np.abs(v) if ab else v), tier)
+    return X2
+
+def _z(v: np.ndarray) -> np.ndarray:
+    v = np.asarray(v, np.float64)
+    if len(v) < 2: return np.zeros(len(v))
+    s = v.std(ddof=1)
+    return (v - v.mean()) / s if s > 1e-9 else np.zeros(len(v))
+
+def choose_score(mode: str, ranker, formulas, X, F, names_x, names_f, lib_max: float, public_score: Callable, lib_gate: Optional[float] = None,
+ inj: Optional[np.ndarray] = None, bias: float = 0.0) -> np.ndarray:
+    names_x = list(names_x); names_f = list(names_f); names = names_x + names_f
+    if mode == 'public' or (lib_gate is not None and lib_max >= lib_gate):
+        s = np.asarray(public_score(np.concatenate([X, F], 1), names), np.float64)
+    else:
+        Xo = order_free_join(X, names_x, inj)
+        pub = lambda: np.asarray(public_score(np.concatenate([Xo, F], 1), names), np.float64)
+        if mode == 'public_free': s = pub()
+        elif mode in ('ours', 'blend'):
+            import ranker_infer as RI
+            E = RI.confidence_features(Xo, names_x, formulas)
+            px = {n: i for i, n in enumerate(names_x)}; pf = {n: i for i, n in enumerate(names_f)}
+            M = np.ascontiguousarray(np.stack([Xo[:, px[f[3:]]] if f.startswith('x__') else (E[f[3:]] if f.startswith('e__') else np.asarray(F[:, pf[f]], np.float32))
+                                              for f in ranker.features], 1), dtype=np.float32)
+            ours = np.mean([b.predict(M, num_threads=4) for b in ranker.boosters], axis=0)
+            s = np.asarray(ours, np.float64) if mode == 'ours' else _z(ours) + _z(pub())
+        else: raise ValueError(mode)
+    if bias and inj is not None and np.any(inj) and len(s) > 1:
+        s = s - bias * float(np.std(s, ddof=1)) * np.asarray(inj, np.float64)
+    return s
+
+def candidate_record(smiles: str, key: Optional[str], chem, fragmod, bits: np.ndarray, rank: int = -1, fz: float = float('nan'),
+ standardize: bool = True) -> Optional[dict]:
+    std = chem.standardize_smiles(smiles) if standardize else smiles
+    if std is None: std = smiles
+    p = chem.mol_props(std)
+    if p is None: return None
+    fp = chem.raw_fingerprint(std)
+    if fp is None: return None
+    if key is None:
+        key = chem.score_key(std)
+        if key is None: return None
+    return dict(smiles=std, key=key, formula=p[0], mass=p[1], n_heavy=p[2], fp=fp[bits].astype(np.float32),
+                frags=fragmod.fragments_for_smiles(std), sim=0.0, steps=0, tan=0.0, parent=-1, raw=None, combo=None,
+                pc_smiles=smiles, pc_rank=int(rank), pc_fz=float(fz))
+
+def build_records(smiles: Sequence[str], keys: Sequence[Optional[str]], chem, fragmod, bits: np.ndarray, fz: Optional[Sequence[float]] = None,
+ cache: Optional[Dict[str, dict]] = None) -> List[dict]:
+    out = []
+    for i, (s, k) in enumerate(zip(smiles, keys)):
+        r = cache.get(s) if cache is not None else None
+        if r is None: r = candidate_record(s, k, chem, fragmod, bits)
+        if cache is not None and r is not None: cache[s] = r
+        if r is not None:
+            r = dict(r, pc_rank=i, pc_fz=float(fz[i]) if fz is not None else float('nan'))
+        out.append(r)
+    return out
+
+def library_max(E, spectra: Sequence[dict], target: float, exclude=None, drop_pid: int = -1) -> float:
+    from casmi import spectra as spmod
+    cfg, L, P = E.cfg, E.L, E.pool
+    cand = P.window(target, cfg.ppm_win)
+    if len(cand) == 0: cand = P.window(target, cfg.ppm_fallback)
+    if drop_pid >= 0: cand = cand[cand != drop_pid]
+    sids = set(int(x) for x in P.train_sid[cand] if x >= 0)
+    best = 0.0
+    if not sids: return best
+    for q in list(spectra)[:cfg.max_query_spectra]:
+        qm, qp = L.prep(q['mz'], q['it'], cfg.search)
+        if len(qm) == 0: continue
+        lc = L.window(target, cfg.search.ppm_win, exclude, q['mode'])
+        if len(lc) == 0: continue
+        sc = spmod.search(qm, qp, lc, L.off, L.mz, L.it, cfg.search.tol, cfg.search.ppm_tol, cfg.search.floor, cfg.search.topk, cfg.search.power,
+                          cfg.search.ent_weight, 0)
+        for j, x in enumerate(lc):
+            if sc[j] > best and int(L.sid[x]) in sids:
+                best = float(sc[j])
+    return best
+
+def install(E, V=None, order: str = 'first'):
+    assert order in ('first', 'after')
+    if getattr(E, '_pc_installed', False):
+        E._pc_order = order; return
+    E._pc_installed = True; E._pc_order = order; E._pc_inject = []; E._pc_last = []
+    gen0, cand0 = E.generate, E.candidates
+
+    def generate(analogs, target, exclude_keys):
+        if E._pc_inject and E._pc_order == 'first':
+            exclude_keys = set(exclude_keys) | {r['key'] for r in E._pc_inject}
+        return gen0(analogs, target, exclude_keys)
+
+    def candidates(target, drop_pid=-1, generated=None):
+        E._pc_last = []
+        if not E._pc_inject: return cand0(target, drop_pid, generated)
+        P = E.pool
+        win = P.window(target, E.cfg.ppm_win)
+        if len(win) == 0: win = P.window(target, E.cfg.ppm_fallback)
+        if drop_pid >= 0: win = win[win != drop_pid]
+        n_gen = len(generated or [])
+        g = inject_last(generated, E._pc_inject, set(P.key[c] for c in win))
+        C = cand0(target, drop_pid, g)
+        n_inj = len(g) - n_gen
+        if n_inj:
+            C.is_gen[len(C.pid) - n_inj:] = 0.0
+        E._pc_last = g[n_gen:]
+        return C
+
+    E.generate = generate; E.candidates = candidates
+    if V is not None:
+        view0 = V.view
+        def view(rec, prep, target, C, X, features_v1):
+            v = view0(rec, prep, target, C, X, features_v1)
+            if E._pc_last:
+                v.is_gen = np.asarray(C.is_gen, np.float32).copy()
+            return v
+        V.view = view
+
+def set_injection(E, records: Optional[Sequence[dict]]):
+    E._pc_inject = list(records or [])
+
+def injected_mask(E, C) -> np.ndarray:
+    m = np.zeros(len(C.pid), bool)
+    n = len(getattr(E, '_pc_last', []) or [])
+    if n: m[len(m) - n:] = True
+    return m
+
+def injected_info(E) -> List[dict]:
+    return list(getattr(E, '_pc_last', []) or [])
+''',
+
+'ranker_infer.py': '''"""Inference for ranker."""
+from __future__ import annotations
+import glob, json, os
+from typing import Callable, Dict, List, Optional, Sequence
+import numpy as np
+
+RANK_SOURCES = {'lib_max_rank': ('lib_max', 1, False), 'ap_rank': ('ap', 1, False), 'fz_rank': ('fz', 1, False), 'el_rank': ('el_sum', -1, False),
+ 'fr_rank': ('fr_int', 1, False), 'sf_rank': ('sf_int', 1, False), 'mass_ppm_rank': ('mass_ppm', -1, True)}
+
+def _rank_avg(x: np.ndarray) -> np.ndarray:
+    n = len(x)
+    if n == 0: return np.zeros(0)
+    o = np.argsort(-x, kind='mergesort'); xs = x[o]
+    b = np.r_[True, xs[1:] != xs[:-1]]; bid = np.cumsum(b) - 1
+    st = np.flatnonzero(b); en = np.r_[st[1:], n]
+    r = np.empty(n); r[o] = ((st + en - 1) / 2.0)[bid]
+    return r / max(1, n - 1)
+
+def order_free(X: np.ndarray, names: Sequence[str]) -> np.ndarray:
+    names = list(names); X2 = np.array(X, np.float32, copy=True)
+    for f, (src, sgn, ab) in RANK_SOURCES.items():
+        if f in names and src in names:
+            v = X2[:, names.index(src)].astype(np.float64)
+            X2[:, names.index(f)] = _rank_avg(sgn * (np.abs(v) if ab else v))
+    return X2
+
+def _groups(labels: Sequence) -> np.ndarray:
+    ix: Dict = {}
+    return np.array([ix.setdefault(l, len(ix)) for l in labels], np.int64)
+
+def confidence_features(X: np.ndarray, names: Sequence[str], formulas: Sequence[str]) -> Dict[str, np.ndarray]:
+    names = list(names); n = len(X)
+    fz = X[:, names.index('fz')].astype(np.float64) * 100.0
+    lib = X[:, names.index('lib_max')].astype(np.float64)
+    g = _groups(['?' if f is None else f for f in formulas]); G = int(g.max()) + 1 if n else 0
+    size = np.bincount(g, minlength=G).astype(float)
+    gmax = np.full(G, -np.inf); np.maximum.at(gmax, g, fz)
+    gsum = np.bincount(g, weights=fz, minlength=G); gmean = gsum / np.maximum(size, 1)
+    gss = np.bincount(g, weights=(fz - gmean[g]) ** 2, minlength=G)
+    gsd = np.sqrt(gss / np.maximum(size - 1, 1))
+    z = np.where((gsd[g] > 1e-9) & (size[g] > 1), (fz - gmean[g]) / np.where(gsd[g] > 1e-9, gsd[g], 1.0), 0.0)
+    rank = np.zeros(n); top2 = np.zeros(G)
+    for j in range(G):
+        idx = np.flatnonzero(g == j)
+        if len(idx) > 1:
+            rank[idx] = _rank_avg(fz[idx]); top2[j] = np.sort(fz[idx])[-2]
+        else: top2[j] = fz[idx[0]]
+    libg = np.zeros(G); np.maximum.at(libg, g, lib)
+    hit = (lib > 0).astype(float)
+    lib2 = float(np.sort(lib)[-2]) if n > 1 else 0.0
+    E = {'fg_size': np.log(size[g]), 'fg_share': size[g] / max(n, 1), 'fz_fg_gap': (fz - gmax[g]) / 100.0, 'fz_fg_z': z, 'fz_fg_rank': rank,
+         'fz_fg_margin': (gmax[g] - top2[g]) / 100.0, 'lib_fg_max': libg[g], 'n_lib_hit': np.full(n, np.log1p(hit.sum())),
+         'n_lib_hit_fg': np.log1p(np.bincount(g, weights=hit, minlength=G))[g], 'lib_margin': np.full(n, (lib.max() if n else 0.0) - lib2)}
+    return {k: np.asarray(v, np.float32) for k, v in E.items()}
+
+class OurRanker:
+    def __init__(self, features: Sequence[str], boosters: Sequence):
+        self.features = list(features); self.boosters = list(boosters)
+    @classmethod
+    def load(cls, model_dir: str) -> 'OurRanker':
+        import lightgbm as lgb
+        feats = json.load(open(os.path.join(model_dir, 'features.json')))
+        files = sorted(glob.glob(os.path.join(model_dir, 'ranker_s*.txt')))
+        assert files, f'no ranker_s*.txt in {model_dir}'
+        return cls(feats, [lgb.Booster(model_file=f) for f in files])
+    def matrix(self, formulas, X, F, names_x, names_f) -> np.ndarray:
+        Xo = order_free(X, names_x)
+        E = confidence_features(Xo, names_x, formulas)
+        px = {n: i for i, n in enumerate(names_x)}; pf = {n: i for i, n in enumerate(names_f)}
+        cols = []
+        for f in self.features:
+            if f.startswith('x__'): cols.append(Xo[:, px[f[3:]]])
+            elif f.startswith('e__'): cols.append(E[f[3:]])
+            else: cols.append(np.asarray(F[:, pf[f]], np.float32))
+        return np.ascontiguousarray(np.stack(cols, 1), dtype=np.float32)
+    def score(self, formulas, X, F, names_x, names_f, threads: int = 4) -> np.ndarray:
+        M = self.matrix(formulas, X, F, names_x, names_f)
+        return np.mean([b.predict(M, num_threads=threads) for b in self.boosters], axis=0)
+
+def _z(v: np.ndarray) -> np.ndarray:
+    v = np.asarray(v, np.float64)
+    if len(v) < 2: return np.zeros(len(v))
+    s = v.std(ddof=1)
+    return (v - v.mean()) / s if s > 1e-9 else np.zeros(len(v))
+
+def choose_score(mode: str, ranker: Optional[OurRanker], formulas, X, F, names_x, names_f, lib_max: float,
+ public_score: Callable[[np.ndarray, List[str]], np.ndarray], lib_gate: Optional[float] = None) -> np.ndarray:
+    names = list(names_x) + list(names_f)
+    if mode == 'public' or (lib_gate is not None and lib_max >= lib_gate):
+        return public_score(np.concatenate([X, F], 1), names)
+    if mode == 'public_free':
+        return public_score(np.concatenate([order_free(X, names_x), F], 1), names)
+    ours = ranker.score(formulas, X, F, names_x, names_f)
+    if mode == 'ours': return ours
+    if mode == 'blend': return _z(ours) + _z(public_score(np.concatenate([order_free(X, names_x), F], 1), names))
+    raise ValueError(mode)
+''',
+
+'surrogate.py': '''"""Adduct surrogate for forward models."""
+import numpy as np
+
+NH3 = 17.026549
+WATER_LOSS = ('[M-H2O+H]+', '[M-2H2O+H]+')
+ADDUCTS = ('[M+NH4]+',) + WATER_LOSS
+
+def rewrite(df, margin=0.5):
+    pos = df['ionization_mode'].astype(str).str.lower().eq('positive') if 'ionization_mode' in df else True
+    out = df[df['adduct'].isin(ADDUCTS) & pos].copy()
+    if not len(out): return out
+    mzs, its, prec = [], [], []
+    for r in out.itertuples(index=False):
+        mz = np.asarray(r.ms2_mzs, np.float64); it = np.asarray(r.ms2_normalized_intensities, np.float64)
+        p = float(r.precursor_mz)
+        if r.adduct == '[M+NH4]+': p -= NH3
+        keep = mz <= p + margin
+        mz, it = mz[keep], it[keep]
+        mzs.append(mz); its.append(it); prec.append(p)
+    def col(v):
+        s = np.empty(len(v), dtype=object); s[:] = v
+        return s
+    out['ms2_mzs'], out['ms2_normalized_intensities'], out['precursor_mz'] = col(mzs), col(its), prec
+    out['adduct'] = '[M+H]+'
+    return out[np.array([len(m) > 0 for m in mzs])]
+
+def extend_items(items, extra_items, mode='gap'):
+    extra = {it['mid']: it['spectra'] for it in extra_items if it['spectra']}
+    out, n = [], 0
+    for it in items:
+        add = extra.get(it['mid'], [])
+        if add and (mode == 'all' or not it['spectra']):
+            it = dict(it, spectra=list(it['spectra']) + list(add)); n += 1
+        out.append(it)
+    return out, n
 '''
 }
 
-# ── 2. Unified Master Config (0.409 Breakthrough Knobs) ───────────────────────
+# ── 2. Unified Master Config (0.420 Breakthrough Knobs) ───────────────────────
 CFG = dict(
-    VERSION='v4b-libgate-pop025',
+    VERSION='ours-v1-baseline',
     # --- v1 engine + ranker (base lists)
     TOPN=60,
     FP_BANK='full1',
+    RANKER='public',
+    RANKER_LIB_GATE=None,
     # --- library gate + PubChem merge
     LIB_TAU=0.9,
     REL_TH=600.0,
@@ -1807,6 +1982,12 @@ CFG = dict(
     USE_PC=True,
     PC_N1=5000,
     PC_WORKERS=4,
+    PC_POP_LAM=0.0,
+    PC_POP_UNION=200,
+    PC_JOIN_N=0,
+    PC_JOIN_ORDER='first',
+    PC_JOIN_MAX_LIB=None,
+    PC_JOIN_MIN_REL=None,
     # --- ICEBERG / GLACIER re-scoring
     USE_ICE=True,
     ICE_LAM=1.0,
@@ -1817,6 +1998,9 @@ CFG = dict(
     USE_GL=True,
     GL_LAM=1.0,
     GL_BUDGET=4000,
+    GL_MH_ONLY=False,
+    ICE_SURROGATE=False,
+    GL_SURROGATE=False,
     # --- engine-2 (prvsiyan two-ranker, BIO + AFIX) and its fusion
     USE_ENG=True,
     ENG_W_PV=0.88,
@@ -1829,51 +2013,64 @@ CFG = dict(
     FUSE_KRR=3.0,
     FUSE_N=40,
     FUSE_ENG_K=40,
-    # --- PubChem popularity prior on pool candidates (0.409 SOTA)
-    POP_MU=0.25,
-    # --- MetFrag-parsimony re-score (0.409 SOTA: only gap molecules)
-    FRAG_LAM=0.5,
-    FRAG_MODE='gap',
-    # --- Forward-model library gate (0.409 SOTA: 0 for library hits)
+    # --- PubChem popularity prior on pool candidates
+    POP_MU=0.0,
+    # --- MetFrag-parsimony re-score
+    FRAG_LAM=0.0,
+    FRAG_MODE='all',
     POST_ICE_LAM=None,
     POST_GL_LAM=None,
-    ICE_LAM_LIB=0.0,
-    GL_LAM_LIB=0.0,
+    ICE_LAM_LIB=None,
+    GL_LAM_LIB=None,
     FUSE_SKIP_LIB=None,
     FILL_25=False,
     POP_LIB_OFF=False,
     FRAG_LIB_OFF=False,
-    # --- run control
-    SMOKE_N=12,
-    SMOKE_ICE_BUDGET=300,
-    FULL_ON_COMMIT=False,
-    DUMP_STAGES=True,
-    STAGE_TIMEOUT_S=4 * 3600,
+    GATE_TAU=None,
+    FUSE_MIN_LIB=None,
+    PC_FWD_T1=None,
+    PC_FWD_N=25,
+    # --- validation mode
     VALIDATION=False,
     VAL_LIB='enveda-np-examples',
     VAL_N=250,
     VAL_SEED=0,
     VAL_MAX_SPEC=16,
     VAL_PURGE='all',
+    VAL_SET='np_examples',
+    VAL_EXTRAS=False,
+    # --- run control
+    SMOKE_N=12,
+    SMOKE_ICE_BUDGET=300,
+    FULL_ON_COMMIT=False,
+    DUMP_STAGES=True,
+    STAGE_TIMEOUT_S=4 * 3600,
 )
 
-def dump(name, obj):
-    if CFG['DUMP_STAGES']:
-        os.makedirs(STAGE, exist_ok=True)
-        json.dump(obj, open(os.path.join(STAGE, f'{name}.json'), 'w'))
+# 0.420 Breakthrough Overrides:
+CFG.update({
+    'VERSION': 'v12a-v4b-pcjoin50-lib07',
+    'POP_MU': 0.25,
+    'FRAG_LAM': 0.5,
+    'FRAG_MODE': 'gap',
+    'ICE_LAM_LIB': 0.0,
+    'GL_LAM_LIB': 0.0,
+    'PC_JOIN_N': 50,
+    'PC_JOIN_MAX_LIB': 0.7
+})
 
-# ── 3. Setup: RDKit Wheel, Path Discovery, Write Embedded Sources ───────────────
+# ── 3. Setup: RDKit Wheel, Input Discovery, Write Embedded Sources ──────────────
 tag = f'cp{sys.version_info.major}{sys.version_info.minor}'
 whl = [w for w in glob.glob('/kaggle/input/**/rdkit-*.whl', recursive=True) if tag in w]
 if not whl:
     whl = sorted(glob.glob('/kaggle/input/**/rdkit*.whl', recursive=True))
+log('rdkit wheel:', whl)
 if whl:
-    log('rdkit wheel:', whl[0])
     r = subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', '--no-index', '--no-deps', whl[0]], capture_output=True, text=True)
     print(r.stdout[-500:], r.stderr[-500:])
 
-import rdkit
-log('rdkit', rdkit.__version__)
+import rdkit; log('rdkit', rdkit.__version__)
+assert rdkit.__version__ == '2026.03.3', 'metric is pinned to RDKit 2026.03.3'
 
 V4CODE = os.path.dirname(os.path.dirname(find('casmi26-v4b-models/**/casmi/engine.py')))
 V4MOD = os.path.dirname(find('casmi26-v4b-models/**/MANIFEST.json'))
@@ -1890,29 +2087,26 @@ for rel, h in sorted(MAN['files'].items()):
     if not os.path.exists(p) or sha256(p) != h:
         bad.append(rel)
 assert not bad, f'dataset files differ from MANIFEST.json: {bad}'
-
 log('V4CODE', V4CODE, '| V4MOD', V4MOD, '| V3CODE', V3CODE, '| POOL', POOL_DIR, '| PC', PC_DIR, '| COMP', COMP)
 log(f"{len(MAN['files'])} files match MANIFEST.json; families {MAN['families']}")
 
 for _rel, _src in EMBED.items():
-    _p = os.path.join(OURS, _rel)
-    os.makedirs(os.path.dirname(_p), exist_ok=True)
+    _p = os.path.join(OURS, _rel); os.makedirs(os.path.dirname(_p), exist_ok=True)
     open(_p, 'w').write(_src)
 
 sys.path.insert(0, OURS)
 import fusion_core
-log('embedded sources written to disk:', sorted(EMBED))
+log('embedded sources:', sorted(EMBED))
 json.dump(CFG, open(os.path.join(WORK, 'cfg.json'), 'w'), indent=1)
 
-# ── 4. Commit Run vs. Scoring Rerun Detection ──────────────────────────────────
+# ── 4. Commit Run vs Scoring Rerun Switch ──────────────────────────────────────
 _te = pd.read_parquet(os.path.join(COMP, 'test.parquet'), columns=['molecule_id', 'spectrum_id'])
 _sig = hashlib.md5(','.join(sorted(_te.spectrum_id.astype(str))).encode()).hexdigest()
 IS_RERUN = bool(os.getenv('KAGGLE_IS_COMPETITION_RERUN')) or _sig != '654e030e4173780e945252b4a5adf70b'
 ICE_BUDGET = CFG['ICE_BUDGET']
 
 if not IS_RERUN and not CFG['FULL_ON_COMMIT']:
-    SM = os.path.join(WORK, 'smoke_comp')
-    os.makedirs(SM, exist_ok=True)
+    SM = os.path.join(WORK, 'smoke_comp'); os.makedirs(SM, exist_ok=True)
     _full = pd.read_parquet(os.path.join(COMP, 'test.parquet'))
     _keep = sorted(_full.molecule_id.unique())[:CFG['SMOKE_N']]
     _full[_full.molecule_id.isin(_keep)].to_parquet(os.path.join(SM, 'test.parquet'))
@@ -1922,9 +2116,9 @@ if not IS_RERUN and not CFG['FULL_ON_COMMIT']:
     COMP = SM
     ICE_BUDGET = CFG['SMOKE_ICE_BUDGET']
 
-log('RERUN', IS_RERUN, '| sig', _sig, '| COMP', COMP, '| ICE_BUDGET', ICE_BUDGET, '| FULL_ON_COMMIT', CFG['FULL_ON_COMMIT'])
+log('RERUN', IS_RERUN, '| sig', _sig, '| COMP', COMP, '| ICE_BUDGET', ICE_BUDGET)
 
-# ── 5. Run Engine 2 Subprocess ────────────────────────────────────────────────
+# ── 5. Engine-2 (Two-Ranker Engine, BIO + AFIX) Subprocess ─────────────────────
 ENG = {}
 if CFG['USE_ENG']:
     try:
@@ -1939,27 +2133,43 @@ if CFG['USE_ENG']:
         print(rr.stdout[-3000:]); print(rr.stderr[-3000:])
         ENG = json.load(open(os.path.join(WORK, 'eng_lists.json')))
         log('engine-2 lists', len(ENG), f'{time.time()-_t0:.0f}s')
+        if not IS_RERUN and len(ENG) == 0:
+            raise RuntimeError(f"FATAL: Engine 2 produced 0 molecules in smoke run! Stderr: {rr.stderr[-2000:]}")
     except Exception as e:
         print('ENGINE-2 FAILED -> v4 lists kept:', repr(e))
+        if not IS_RERUN:
+            raise
 dump('eng', ENG)
 
-# ── 6. Run PubChem-Only Channel Subprocess ─────────────────────────────────────
+# ── 6. PubChem-Only Channel Subprocess ─────────────────────────────────────────
 PC = {}
+_pc_env = dict(os.environ, CASMI_PC_N1=str(CFG['PC_N1']), CASMI_PC_K=str(max(25, CFG['PC_JOIN_N'])))
 if CFG['USE_PC']:
     try:
         rr = subprocess.run([sys.executable, os.path.join(OURS, 'pc', 'pc_runner.py'),
                              V3CODE, V3MOD, POOL_DIR, PC_DIR, os.path.join(COMP, 'test.parquet'),
                              os.path.join(WORK, 'pc_lists.json'), str(CFG['PC_WORKERS'])],
-                            capture_output=True, text=True, timeout=CFG['STAGE_TIMEOUT_S'],
-                            env=dict(os.environ, CASMI_PC_N1=str(CFG['PC_N1'])))
+                            capture_output=True, text=True, timeout=CFG['STAGE_TIMEOUT_S'], env=_pc_env)
         print(rr.stdout[-3000:]); print(rr.stderr[-3000:])
         PC = json.load(open(os.path.join(WORK, 'pc_lists.json')))
     except Exception as e:
         print('PUBCHEM CHANNEL FAILED -> base lists only:', repr(e))
-    log('pubchem lists', len(PC))
+        if not IS_RERUN:
+            raise
+
+PC_DEEP = {}
+if CFG['PC_JOIN_N'] > 0:
+    for _m, _p in PC.items():
+        PC_DEEP[_m] = dict(pc=list(_p['pc']), pc_fz=list(_p['pc_fz']), pc_keys=list(_p['pc_keys']), best_pool_fz=_p.get('best_pool_fz'))
+    for _m, _p in PC.items():
+        for _k in ('pc', 'pc_fz', 'pc_keys'):
+            _p[_k] = _p[_k][:25]
+    dump('pc_deep', PC_DEEP)
+
+log('pubchem lists', len(PC), '| deep lists for the join', len(PC_DEEP))
 dump('pc', PC)
 
-# ── 7. Main Engine Setup ──────────────────────────────────────────────────────
+# ── 7. Main Engine Setup & PubChem Join Hook Installation ──────────────────────
 sys.path.insert(0, V4CODE)
 os.makedirs('work', exist_ok=True)
 for f in ['pool_meta.parquet', 'pool_fp.npy', 'pool_frag_off.npy', 'pool_frag_mass.npy', 'fp_bits.npy', 'train_structs.parquet', 'train_fp_sel.npy']:
@@ -1970,43 +2180,36 @@ from casmi.build import build_spec_cache
 build_spec_cache(os.path.join(COMP, 'train.parquet'), 'work')
 import casmi; log('casmi from', casmi.__file__)
 sys.path.insert(1, os.path.join(V4CODE, 'fe_v4'))
-
 import torch, lightgbm as lgb
 from casmi.library import Library
 from casmi.pool import Pool
 from casmi.engine import Engine, EngineCfg, FEATURES
 from casmi import fpnet, chem
-_v1e_hits = glob.glob('/kaggle/input/**/v1engine.py', recursive=True) or glob.glob('**/v1engine.py', recursive=True)
-if _v1e_hits:
-    sys.path.insert(0, os.path.dirname(_v1e_hits[0]))
 import v1engine
 
 dev = 'cuda' if torch.cuda.is_available() else 'cpu'
 L = Library('work'); P = Pool('work')
 tfp = np.load('work/train_fp_sel.npy')
+
 _FULL = glob.glob('/kaggle/input/**/casmi26-fpnet-full1/**/fpnet_full1.pt', recursive=True)
 _A = os.path.join(V4MOD, 'fpnet_0.pt')
-
-if CFG['FP_BANK'] == 'ens' and _FULL:
-    _fp = [_FULL[0], _A]
-elif CFG['FP_BANK'] == 'full1' and _FULL:
+if CFG['FP_BANK'] == 'full1' and _FULL:
     _fp = [_FULL[0]]
 else:
     _fp = [_A]
-
 bank = fpnet.ModelBank(_fp, device=dev)
 log('engine FP bank:', _fp)
+
 E = Engine(L, P, tfp, EngineCfg(generate=True), bank)
 V = v1engine.V1FE(E, [os.path.join(V4MOD, m['file']) for m in MAN['fe_models']], MAN['families'], device=dev)
 
 if 'derivation' in MAN['families']:
     n_bad = V.mods['derivation'].self_test()
     log('derivation prior self-test mismatches:', n_bad)
-    assert n_bad == 0, 'RDKit build differs from derivation prior'
+    assert n_bad == 0, 'RDKit build differs from derivation prior build'
 
 RK = pickle.load(open(os.path.join(V4MOD, MAN['ranker']['file']), 'rb'))
-RK_FEATS = list(RK['features'])
-RK_B = [lgb.Booster(model_str=s) for s in RK['boosters']]
+RK_FEATS = list(RK['features']); RK_B = [lgb.Booster(model_str=s) for s in RK['boosters']]
 
 def rank_score(X, names):
     pos = {n: i for i, n in enumerate(names)}
@@ -2017,11 +2220,17 @@ def rank_score(X, names):
 
 log('engine ready; ranker features', len(RK_FEATS), 'boosters', len(RK_B))
 
-# ── 8. Compute Base Candidate Lists ───────────────────────────────────────────
+import pc_join
+if CFG['PC_JOIN_N'] > 0:
+    from casmi import frag as fragmod
+    pc_join.install(E, V, CFG['PC_JOIN_ORDER'])
+    log('PubChem join installed: N', CFG['PC_JOIN_N'], 'order', CFG['PC_JOIN_ORDER'], 'max lib', CFG['PC_JOIN_MAX_LIB'])
+
+# ── 8. Base Lists Generation (Candidate Retrieval + PubChem Injection) ────────
 te = pd.read_parquet(os.path.join(COMP, 'test.parquet'))
 te['nm'] = chem.neutral_mass(te.precursor_mz.values.astype(np.float64), te.adduct.values)
 mols = list(te.groupby('molecule_id', sort=False))
-BASE, n_err = {}, 0
+BASE, n_err, n_join, n_join_mol, n_join_err = {}, 0, 0, 0, 0
 
 for gi, (mid, sub) in enumerate(mols):
     nms = sub.nm.values[np.isfinite(sub.nm.values)]
@@ -2037,26 +2246,57 @@ for gi, (mid, sub) in enumerate(mols):
                                 prec=float(r.precursor_mz), ce=float(ce_arr.mean()) if len(ce_arr) else np.nan,
                                 ce_n=int(len(ce_arr)) if len(ce_arr) else 1))
         try:
-            C, X, F, names, info = V.run(spectra, target)
-            lib_max = float(info.get('lib_max', 0.0))
+            recs, inj, _out = [], None, {}
+            if CFG['PC_JOIN_N'] > 0:
+                try:
+                    _p = PC_DEEP.get(mid) or PC_DEEP.get(str(mid))
+                    _gate = CFG['PC_JOIN_MAX_LIB'] if IS_RERUN else None
+                    if _p and (_gate is None or pc_join.library_max(E, spectra, target) < _gate):
+                        _ix = pc_join.select_injection(_p, CFG['PC_JOIN_N'], min_rel=CFG['PC_JOIN_MIN_REL'])
+                        recs = pc_join.build_records([_p['pc'][i] for i in _ix], [_p['pc_keys'][i] for i in _ix], chem, fragmod, P.bits, fz=[_p['pc_fz'][i] for i in _ix])
+                        recs = [r for r in recs if abs(r['mass'] - target) <= target * 30e-6]
+                except Exception as e:
+                    if not IS_RERUN: raise
+                    print('PC JOIN FAILED -> no injection', mid, repr(e)); recs = []; n_join_err += 1
+                pc_join.set_injection(E, recs)
+                try:
+                    C, X, F, names, info = V.run(spectra, target)
+                except Exception as e:
+                    if not recs or not IS_RERUN: raise
+                    print('JOINED RUN FAILED -> run without injection', mid, repr(e)); n_join_err += 1
+                    pc_join.set_injection(E, []); C, X, F, names, info = V.run(spectra, target)
+                lib_max = float(info.get('lib_max', 0.0))
+                if CFG['PC_JOIN_N'] > 0:
+                    inj = pc_join.injected_mask(E, C); _ji = pc_join.injected_info(E)
+                    n_join += len(_ji); n_join_mol += int(len(_ji) > 0)
+                    _out = {len(C.pid) - len(_ji) + t: d['pc_smiles'] for t, d in enumerate(_ji)}
+            else:
+                C, X, F, names, info = V.run(spectra, target)
+                lib_max = float(info.get('lib_max', 0.0))
+
+            if (gi + 1) % 50 == 0:
+                for _fm, _c in (('fragnet', '_GEN'), ('frag2', '_GF'), ('frag2', '_GC')):
+                    if _fm in V.mods and hasattr(V.mods[_fm], _c):
+                        getattr(V.mods[_fm], _c).clear()
+
             if len(C.pid):
                 score = rank_score(np.concatenate([X, F], 1), list(FEATURES) + list(names))
                 order = np.argsort(-score, kind='stable')
                 seen = set()
                 for i in order:
                     k = C.key[i]
-                    if k in seen:
-                        continue
-                    seen.add(k); smis.append(C.smiles[i]); keys.append(k); scs.append(float(score[i])); forms.append(C.formula[i]); pids.append(int(C.pid[i]))
-                    if len(smis) >= CFG['TOPN']:
-                        break
+                    if k in seen: continue
+                    seen.add(k); smis.append(_out.get(int(i), C.smiles[i])); keys.append(k); scs.append(float(score[i])); forms.append(C.formula[i]); pids.append(int(C.pid[i]))
+                    if len(smis) >= CFG['TOPN']: break
         except Exception as e:
             print('ERROR', mid, repr(e)); n_err += 1
+            if not IS_RERUN: raise
+
     BASE[mid] = [smis, keys, lib_max, scs, forms, pids]
     if (gi + 1) % 25 == 0 or gi == len(mols) - 1:
         log(f' {gi+1}/{len(mols)} molecules')
 
-log('base lists done, errors', n_err)
+log('base lists done, errors', n_err, '| PC join: injected rows', n_join, 'in', n_join_mol, 'molecules, failures', n_join_err)
 dump('base', BASE)
 
 # ── 9. Forward Models (ICEBERG + GLACIER) & MetFrag-lite Rescoring ─────────────
@@ -2064,10 +2304,8 @@ from rdkit import Chem as _Chem
 from rdkit.Chem.rdMolDescriptors import CalcMolFormula as _CMF
 
 def formula_of(s):
-    try:
-        return _CMF(_Chem.MolFromSmiles(s))
-    except Exception:
-        return s
+    try: return _CMF(_Chem.MolFromSmiles(s))
+    except Exception: return s
 
 ICE_SCORES, GL_SCORES, items, ice_fuse, gl_fuse = {}, {}, None, None, None
 TOPN, LIB_TAU = CFG['TOPN'], CFG['LIB_TAU']
@@ -2084,8 +2322,7 @@ if CFG['USE_ICE']:
             K, n_add = CFG['ICE_UNION_K'], 0
             for m in mids:
                 e = ENG.get(str(m))
-                if not e or not e.get('smiles'):
-                    continue
+                if not e or not e.get('smiles'): continue
                 bs, bk, bf = list(BASE[m][0][:TOPN]), set(BASE[m][1][:TOPN]), list(BASE[m][4][:TOPN])
                 es = [s for s, k in zip(e['smiles'][:K], e['keys'][:K]) if k not in bk]
                 extra = ice_fuse.ice_candidates(bs + es, bf + [formula_of(s) for s in es], len(bs) + len(es))
@@ -2103,11 +2340,9 @@ if CFG['USE_ICE']:
         cands = {m: c for m, c in cands.items() if c}
         items = ice_fuse.build_ice_input(te, cands)
         log('ICE input molecules', len(items), 'candidates', sum(len(it['cands']) for it in items))
-        ICE_SCORES = ice_fuse.run_ice(ICE_PKG, items, workdir=os.path.join(WORK, 'ice_work'), device='cuda',
-                                      budget_s=ICE_BUDGET, site=os.path.join(WORK, 'ice_site'))
+        ICE_SCORES = ice_fuse.run_ice(ICE_PKG, items, workdir=os.path.join(WORK, 'ice_work'), device='cuda', budget_s=ICE_BUDGET, site=os.path.join(WORK, 'ice_site'))
         meta_f = os.path.join(WORK, 'ice_work', 'ice_out.json.meta.json')
-        if os.path.exists(meta_f):
-            print('ICE meta', open(meta_f).read()[:1500])
+        if os.path.exists(meta_f): print('ICE meta', open(meta_f).read()[:1500])
     except Exception as e:
         ICE_SCORES = {}
         print('ICE FAILED -> ranker order kept:', repr(e))
@@ -2118,9 +2353,7 @@ if CFG['USE_GL'] and items:
         sys.path.append(GL_PKG)
         import gl_fuse
         gc.collect(); torch.cuda.empty_cache()
-        GL_SCORES = gl_fuse.run_gl(GL_PKG, items, workdir=os.path.join(WORK, 'gl_work'), device='cuda',
-                                   budget_s=CFG['GL_BUDGET'], site=os.path.join(WORK, 'ice_site'),
-                                   wheels=os.path.join(ICE_PKG, 'wheels'))
+        GL_SCORES = gl_fuse.run_gl(GL_PKG, items, workdir=os.path.join(WORK, 'gl_work'), device='cuda', budget_s=CFG['GL_BUDGET'], site=os.path.join(WORK, 'ice_site'), wheels=os.path.join(ICE_PKG, 'wheels'))
         meta_f = os.path.join(WORK, 'gl_work', 'gl_out.json.meta.json')
         print('GL meta', open(meta_f).read()[:1500] if os.path.exists(meta_f) else 'missing')
     except Exception as e:
@@ -2133,8 +2366,7 @@ if CFG['FRAG_LAM'] > 0:
         import frag_rescore
         _t0 = time.time()
         for mid, _sub in te.groupby('molecule_id', sort=False):
-            if mid not in BASE:
-                continue
+            if mid not in BASE: continue
             _spec = [dict(mz=np.asarray(r.ms2_mzs, np.float64), it=np.asarray(r.ms2_normalized_intensities, np.float64),
                           adduct=r.adduct, prec=float(r.precursor_mz), mode=1 if r.ionization_mode == 'positive' else -1)
                      for r in _sub.itertuples()][:16]
@@ -2156,12 +2388,24 @@ dump('meta', dict(mol_order=MOL_ORDER, sample_ids=list(samp.molecule_id), is_rer
 POOL_POP = None
 if CFG['POP_MU'] > 0:
     try:
-        _pp = os.path.dirname(find('pool_lsid.npy'))
-        POOL_POP = np.load(os.path.join(_pp, 'pool_lsid.npy')).astype(np.float64) + \
-                   np.load(os.path.join(_pp, 'pool_lpmid.npy')).astype(np.float64)
-        log('popularity prior loaded', _pp, POOL_POP.shape)
+        hits = sorted(glob.glob('/kaggle/input/**/pool_lsid.npy', recursive=True) or
+                      glob.glob('/kaggle/input/**/*lsid*.npy', recursive=True) or
+                      glob.glob('**/pool_lsid.npy', recursive=True), key=len)
+        if not hits:
+            raise FileNotFoundError("Could not find pool_lsid.npy in /kaggle/input")
+        _pp = os.path.dirname(hits[0])
+        lsid_path = hits[0]
+        lpmid_hits = sorted(glob.glob(os.path.join(_pp, '*lpmid*.npy')) or
+                            glob.glob('/kaggle/input/**/*lpmid*.npy', recursive=True), key=len)
+        if not lpmid_hits:
+            raise FileNotFoundError(f"Could not find pool_lpmid.npy in {_pp} or /kaggle/input")
+        lpmid_path = lpmid_hits[0]
+        POOL_POP = np.load(lsid_path).astype(np.float64) + np.load(lpmid_path).astype(np.float64)
+        log(f'Popularity Prior loaded successfully: {lsid_path}, shape {POOL_POP.shape}, mu={CFG["POP_MU"]}')
     except Exception as e:
         print('POPULARITY PRIOR UNAVAILABLE -> off:', repr(e))
+        if not IS_RERUN:
+            raise RuntimeError(f"FATAL: Popularity prior enabled (POP_MU={CFG['POP_MU']}) but failed to load! Error: {e}")
 
 sub, FSTATS = fusion_core.build_submission(
     BASE, PC, ENG, ICE_SCORES, GL_SCORES, CFG, MOL_ORDER, list(samp.molecule_id),
@@ -2170,6 +2414,8 @@ sub, FSTATS = fusion_core.build_submission(
 
 fusion_core.validate(sub, list(samp.molecule_id))
 sub.to_csv(os.path.join(WORK, 'submission.csv'), index=False)
+sub.to_csv('submission.csv', index=False)
+
 json.dump(dict(version=CFG['VERSION'], secs=round(time.time() - T0), stats=FSTATS, n_errors=n_err,
                families=MAN['families'], gpu=torch.cuda.get_device_name(0) if dev == 'cuda' else None, cfg=CFG),
           open(os.path.join(WORK, 'run_manifest.json'), 'w'), indent=1)
@@ -2182,3 +2428,4 @@ shutil.rmtree(os.path.join(WORK, 'ice_site'), ignore_errors=True)
 
 print("\n--- Top 5 Sample Predictions ---")
 print(sub.head())
+print('ALL DONE! Submission file is ready at submission.csv.')
