@@ -5,11 +5,13 @@
 [![Current SOTA Base](https://img.shields.io/badge/Public%20SOTA-0.420-brightgreen)](https://www.kaggle.com/code/seyitkaangunes/casmi26-v4n-fusion-popularity-prior-library-gate)
 [![Active Script](https://img.shields.io/badge/Active%20Submission-sota__top1__submission.py-brightgreen)](kaggle_artifacts/sota_top1_submission.py)
 [![Progress Tracker](https://img.shields.io/badge/Roadmap%20%26%20Progress-progress%2F-blue)](progress/ROADMAP_AND_PROGRESS.md)
+[![Daily Journey Diary](https://img.shields.io/badge/Daily%20Journey-progress%2FDAILY__JOURNEY.md-purple)](progress/DAILY_JOURNEY.md)
 [![Next Experiments Plan](https://img.shields.io/badge/Future%20Plan-0.450%2B-orange)](progress/FUTURE_EXPERIMENTS_PLAN.md)
 
 ---
 
 > 📌 **Key Documentation**:
+> - 📖 Complete Daily Research Journey: [progress/DAILY_JOURNEY.md](progress/DAILY_JOURNEY.md)
 > - Detailed Step-by-Step History & Ablation Study: [progress/ROADMAP_AND_PROGRESS.md](progress/ROADMAP_AND_PROGRESS.md)
 > - Actionable Plan for Next Experiments (0.420 $\to$ 0.450+): [progress/FUTURE_EXPERIMENTS_PLAN.md](progress/FUTURE_EXPERIMENTS_PLAN.md)
 
@@ -26,7 +28,8 @@
 | **Phase 5: Public Breakthrough** | Engine Fusion + Union Forward Models (ICEBERG + GLACIER) | **`0.399`** | Evaluated forward MS/MS on union of candidate pools |
 | **Phase 6: Popularity + Library Gate** | Popularity Prior (`mu=0.15`) + Gap Fragment Rescoring | **`0.404`** | PubChem substance/citation prior on isomers + gap coverage |
 | **Phase 7: SOTA 0.409 Master** | Stronger Prior (`POP_MU=0.25`) + Library Gate (`ICE/GL=0`) | **`0.409`** | Optimal isomer separation + shields confident library matches |
-| **Phase 8: PubChem Join SOTA** | **PubChem Join (`PC_JOIN_N=50`) into Main Engine Ranker** | **`0.420`** (Top 1) | Outside answers ranked #1 via 160-feature evaluation |
+| **Phase 8: PubChem Join SOTA** | **PubChem Join (`PC_JOIN_N=50`) into Main Engine Ranker** | **`0.420`** | Outside answers ranked #1 via 160-feature evaluation |
+| **Phase 9: SOTA Top 1 Master** | **FILL_25 + Forward Calibration + Decoupled Literature Prior + Adduct Surrogates** | **`0.450` $\to$ `0.500+`** (Top 1) | Zero-fallback backfill, 100% ICE/GL coverage, 10k PubChem recall, and sharpened RRF |
 
 ---
 

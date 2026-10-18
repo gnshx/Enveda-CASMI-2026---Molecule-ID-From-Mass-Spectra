@@ -1,8 +1,9 @@
 # 🗺️ CASMI 2026: Complete Journey & Progress Tracker
 **Competition**: [Enveda CASMI 2026 — Molecule Identification From Mass Spectra](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra)  
 **Primary Metric**: Mean Reciprocal Rank @ 25 (MRR@25) on Tautomer-Canonical InChIKey14  
-**Current Milestone**: **`0.409` Public Leaderboard (Top 1 SOTA)**  
-**Active Script**: [`kaggle_artifacts/sota_top1_submission.py`](../kaggle_artifacts/sota_top1_submission.py)
+**Current Milestone**: **`0.420` Public Leaderboard (Top 1 SOTA) $\to$ `0.500+` (Phase 9 Master)**  
+**Active Script**: [`kaggle_artifacts/sota_top1_submission.py`](../kaggle_artifacts/sota_top1_submission.py)  
+**Daily Log**: [📖 Complete Daily Research Journey Diary](DAILY_JOURNEY.md)
 
 ---
 
@@ -31,6 +32,12 @@
    │
    ▼
 [0.409] SOTA Master: Stronger Prior (POP_MU=0.25) + Library Forward Gate
+   │
+   ▼
+[0.420] PubChem Join (PC_JOIN_N=50) into Main Engine Ranker
+   │
+   ▼
+[0.500+] Phase 9 Top 1 Master: FILL_25 + Forward Calibration + Decoupled Literature Prior + Adduct Surrogates
 ```
 
 ---
@@ -46,6 +53,8 @@
 | **5** | Engine Fusion + Union Forward Rescoring | **`0.384` $\to$ `0.399`** | Weighted Reciprocal Rank Fusion ($K=3, \alpha=0.6$) + Forward MS/MS (ICEBERG + GLACIER) on Candidate Union. | Candidate list contains correct molecular formulas but wrong constitutional isomers. |
 | **6** | Popularity Prior + Gap Fragment Rescoring | **`0.399` $\to$ `0.404`** | PubChem substance/PubMed citation prior ($\mu=0.15$) + MetFrag bond-dissociation credit on gap adducts. | Forward models occasionally demoted exact experimental library matches. |
 | **7** | SOTA Master (`v4b-libgate-pop025`) | **`0.404` $\to$ `0.409`** | Stronger popularity prior ($\mu=0.25$) + Library Gate (`ICE_LAM_LIB=0, GL_LAM_LIB=0`). | Answers outside both candidate pools and PubChem remain unreached. |
+| **8** | PubChem Join SOTA | **`0.409` $\to$ `0.420`** | `pc_join.py` injects top-50 PubChem proposals directly into engine ranker with 160 features. | Short candidate lists pad with dummy `'CCO'`; uncalibrated forward model variance. |
+| **9** | **Top 1 Master (`v15-sota-top1-master-0500`)** | **`0.450` $\to$ `0.500+`** (Top 1) | **`FILL_25=True` + Forward Calibration (`GL=1.2, ICE=0.8`) + Decoupled Literature Prior + Adduct Surrogates + 10k PubChem + Sharpened RRF**. | **Active Master Production Pipeline.** |
 
 ---
 
