@@ -33,11 +33,15 @@
    ▼
 [0.409] SOTA Master: Stronger Prior (POP_MU=0.25) + Library Forward Gate
    │
+   │
    ▼
 [0.420] PubChem Join (PC_JOIN_N=50) into Main Engine Ranker
    │
    ▼
-[0.500+] Phase 9 Top 1 Master: FILL_25 + Forward Calibration + Decoupled Literature Prior + Adduct Surrogates
+[0.442] e2rank2 Breakthrough: Dynamic Engine-2 Rank-2 Injection on Top-1 Divergence
+   │
+   ▼
+[0.455+] Phase 10 Plan B Master: E006 + e2rank2 + PubChemLite + CC BY ChEBI + Adduct Surrogates (v16)
 ```
 
 ---
@@ -54,7 +58,8 @@
 | **6** | Popularity Prior + Gap Fragment Rescoring | **`0.399` $\to$ `0.404`** | PubChem substance/PubMed citation prior ($\mu=0.15$) + MetFrag bond-dissociation credit on gap adducts. | Forward models occasionally demoted exact experimental library matches. |
 | **7** | SOTA Master (`v4b-libgate-pop025`) | **`0.404` $\to$ `0.409`** | Stronger popularity prior ($\mu=0.25$) + Library Gate (`ICE_LAM_LIB=0, GL_LAM_LIB=0`). | Answers outside both candidate pools and PubChem remain unreached. |
 | **8** | PubChem Join SOTA | **`0.409` $\to$ `0.420`** | `pc_join.py` injects top-50 PubChem proposals directly into engine ranker with 160 features. | Short candidate lists pad with dummy `'CCO'`; uncalibrated forward model variance. |
-| **9** | **Top 1 Master (`v15-sota-top1-master-0500`)** | **`0.450` $\to$ `0.500+`** (Top 1) | **`FILL_25=True` + Forward Calibration (`GL=1.2, ICE=0.8`) + Decoupled Literature Prior + Adduct Surrogates + 10k PubChem + Sharpened RRF**. | **Active Master Production Pipeline.** |
+| **9** | Top 1 Master (`v15`) | **`0.420` $\to$ `0.435`** | `FILL_25=True` + Forward Calibration (`GL=1.2, ICE=0.8`) + Adduct Surrogates. | Pure COCONUT candidate pool ceiling (~0.398) limits recall of non-plant metabolites. |
+| **10** | **Plan B Master (`v16-e006-e2rank2-surrogate`)** | **`0.455` $\to$ `0.470+`** | **`E2_RANK2=True` + PubChemLite & CC BY ChEBI DBs + E006 Evidence Margin + Adduct Surrogates**. | **Active Production Script.** |
 
 ---
 

@@ -14,6 +14,10 @@
 > - 📖 Complete Daily Research Journey: [progress/DAILY_JOURNEY.md](progress/DAILY_JOURNEY.md)
 > - Detailed Step-by-Step History & Ablation Study: [progress/ROADMAP_AND_PROGRESS.md](progress/ROADMAP_AND_PROGRESS.md)
 > - Actionable Plan for Next Experiments (0.420 $\to$ 0.450+): [progress/FUTURE_EXPERIMENTS_PLAN.md](progress/FUTURE_EXPERIMENTS_PLAN.md)
+> - 🧪 Mass Spectrometry & Chemistry Foundations: [docs/CHEMISTRY_AND_MASS_SPECTROMETRY_FOUNDATIONS.md](docs/CHEMISTRY_AND_MASS_SPECTROMETRY_FOUNDATIONS.md)
+> - 🧠 ML Architecture (Inverse & Forward Models): [docs/MACHINE_LEARNING_ARCHITECTURE_AND_MODELS.md](docs/MACHINE_LEARNING_ARCHITECTURE_AND_MODELS.md)
+> - 🗄️ Candidate Databases & Popularity Priors: [docs/CANDIDATE_DATABASES_AND_POPULARITY_PRIORS.md](docs/CANDIDATE_DATABASES_AND_POPULARITY_PRIORS.md)
+> - 🏆 SOTA Strategy & Leaderboard Breakthroughs: [docs/SOTA_COMPETITION_STRATEGY_AND_LEADERBOARD_BREAKTHROUGHS.md](docs/SOTA_COMPETITION_STRATEGY_AND_LEADERBOARD_BREAKTHROUGHS.md)
 
 ---
 
@@ -29,7 +33,8 @@
 | **Phase 6: Popularity + Library Gate** | Popularity Prior (`mu=0.15`) + Gap Fragment Rescoring | **`0.404`** | PubChem substance/citation prior on isomers + gap coverage |
 | **Phase 7: SOTA 0.409 Master** | Stronger Prior (`POP_MU=0.25`) + Library Gate (`ICE/GL=0`) | **`0.409`** | Optimal isomer separation + shields confident library matches |
 | **Phase 8: PubChem Join SOTA** | **PubChem Join (`PC_JOIN_N=50`) into Main Engine Ranker** | **`0.420`** | Outside answers ranked #1 via 160-feature evaluation |
-| **Phase 9: SOTA Top 1 Master** | **FILL_25 + Forward Calibration + Decoupled Literature Prior + Adduct Surrogates** | **`0.450` $\to$ `0.500+`** (Top 1) | Zero-fallback backfill, 100% ICE/GL coverage, 10k PubChem recall, and sharpened RRF |
+| **Phase 9: SOTA Top 1 Master** | **FILL_25 + Forward Calibration + Decoupled Literature Prior + Adduct Surrogates** | **`0.435`** | Zero-fallback backfill, 100% ICE/GL coverage, and sharpened RRF |
+| **Phase 10: Plan B Master** | **E006 + e2rank2 + PubChemLite & CC BY ChEBI DBs + Adduct Surrogates (v16)** | **`0.455` $\to$ `0.470+`** (Top 1) | Engine-2 Rank-2 injection, expanded candidate recall, 100% forward coverage |
 
 ---
 
