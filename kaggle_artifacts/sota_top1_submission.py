@@ -1443,10 +1443,20 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
                     if o is not None: fsm = [fsm0[i] for i in o]
                 except Exception as ex:
                     log('fused frag rerank failed', mid, repr(ex))
+            # HIGH-CONFIDENCE LIBRARY MATCH SHIELD:
+            # If lib_max >= 0.88, protect the experimental library match at Rank 1 from forward model noise
+            lib_val = lib_of.get(mid, 0.0)
+            if lib_val >= 0.88 and len(vs) > 0:
+                top_lib = vs[0]
+                if top_lib in fsm:
+                    fsm.remove(top_lib)
+                fsm.insert(0, top_lib)
+                stats['fuse']['shielded'] = stats['fuse'].get('shielded', 0) + 1
+
             stats['fuse']['top1_changed'] += int(bool(vs) and fsm[:1] != vs[:1])
             vs = fsm[:25]
-        # e2rank2 breakthrough rule: when Engine 2 diverges on Rank 1, inject Engine 2 top candidate into Rank 2
-        if c.get('E2_RANK2', True) and e and e.get('smiles') and len(vs) >= 1:
+        # Disabled destructive post-hoc rank2 hijacking: forward models determine true rank2
+        if c.get('E2_RANK2', False) and e and e.get('smiles') and len(vs) >= 1:
             e_top = e['smiles'][0]
             e_k = score_key(e_top) or e_top
             v_k0 = score_key(vs[0]) or vs[0]
@@ -2061,26 +2071,26 @@ CFG = dict(
 
 # ── SOTA Top-1 (0.455 -> 0.500+) Plan B Master Breakthrough Overrides ─────────
 CFG.update({
-    'VERSION': 'v16-e006-e2rank2-surrogate-master',
-    'E2_RANK2': True,
-    'POP_MU': 0.28,
-    'FRAG_LAM': 0.5,
+    'VERSION': 'v17-proven-sota-restored',
+    'E2_RANK2': False,
+    'POP_MU': 0.15,
+    'FRAG_LAM': 0.0,
     'FRAG_MODE': 'gap',
-    'ICE_LAM': 0.8,
-    'GL_LAM': 1.2,
-    'POST_ICE_LAM': 0.8,
-    'POST_GL_LAM': 1.2,
+    'ICE_LAM': 1.0,
+    'GL_LAM': 1.0,
+    'POST_ICE_LAM': 1.0,
+    'POST_GL_LAM': 1.0,
     'ICE_LAM_LIB': 0.0,
     'GL_LAM_LIB': 0.0,
-    'PC_N1': 10000,
-    'PC_JOIN_N': 60,
+    'PC_N1': 5000,
+    'PC_JOIN_N': 0,
     'PC_JOIN_MAX_LIB': 0.7,
-    'ENG_TOPK': 50,
-    'FUSE_ENG_K': 50,
-    'ICE_UNION_K': 50,
+    'ENG_TOPK': 40,
+    'FUSE_ENG_K': 40,
+    'ICE_UNION_K': 40,
     'FILL_25': True,
-    'FUSE_ALPHA': 0.65,
-    'FUSE_KRR': 2.0,
+    'FUSE_ALPHA': 0.60,
+    'FUSE_KRR': 3.0,
     'ICE_SURROGATE': True,
     'GL_SURROGATE': True
 })

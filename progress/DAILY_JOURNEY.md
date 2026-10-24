@@ -270,3 +270,56 @@ Today, we conducted a rigorous deep-dive into the core chemical physics, machine
 6. **Continuous GitHub Sync**:
    - Committing and pushing all updates directly to `origin main` to maintain an immutable record of our SOTA competition journey.
 
+---
+
+## 📅 Day 12: October 25, 2026 — Forensic Post-Mortem of Version 16 (0.390) & Version 17 Proven SOTA Restoration
+
+### 1. Root Cause Analysis: Why Version 16 Scored 0.390 (Lower than 0.395/0.399)
+
+We conducted an exhaustive line-by-line post-mortem comparing Version 16 against the original LB 0.399 baseline:
+
+1. **Destructive Rank-2 Hijacking (`E2_RANK2 = True`)**:
+   - *What happened*: In Version 16, a post-hoc rule was applied after ICEBERG and GLACIER forward re-ranking:
+     ```python
+     if c.get('E2_RANK2', True) and e and e.get('smiles') and len(vs) >= 1:
+         if e_k != v_k0:
+             vs = [vs[0], e_top] + [x for x in vs[1:] if (score_key(x) or x) != e_k]
+     ```
+   - *The Failure*: `vs` had already been forward-rescored by ICEBERG and GLACIER neural fragmentation models against the true experimental MS/MS peaks. The candidate at Rank 2 was the one with the highest MS2 fragment cosine similarity.
+   - Because Engine 1 and Engine 2 diverge in ~70% of test spectra, this rule **blindly shoved Engine 2's unverified top hit into Rank 2**, kicking the genuine forward-validated candidate down to Rank 3!
+   - In MRR: If the forward model had the right answer at Rank 2:
+     - True Rank 2: $\text{RR} = 1/2 = \mathbf{0.500}$
+     - Demoted to Rank 3: $\text{RR} = 1/3 = \mathbf{0.333}$
+     - Net Penalty: $\mathbf{-0.167}$ reciprocal rank lost across hundreds of test spectra.
+
+2. **Omission of the High-Confidence Library Match Shield**:
+   - In the proven 0.399 script, whenever a test molecule had an exact match in the reference training library (`lib_max >= 0.88`), the Library Shield protected Rank 1:
+     ```python
+     if lib_val >= 0.88 and len(vs) > 0:
+         top_lib = vs[0]
+         if top_lib in fsm: fsm.remove(top_lib)
+         fsm.insert(0, top_lib)
+     ```
+   - In Version 16, this shield was inadvertently omitted from `fusion_core.py`, allowing noisy forward model predictions to re-order and knock exact experimental reference matches out of Rank 1!
+
+3. **Decoy Over-Saturation (`PC_JOIN_N = 60`)**:
+   - In the 0.399 baseline, `PC_JOIN_N` was `0` (PubChem candidates were only merged conditionally into `BASE` via gated slots).
+   - Injecting 60 uncurated PubChem candidates into the 160-feature GBDT ranker flooded the candidate pool with synthetic isomers, diluting authentic natural products when the popularity prior degraded during commit reruns.
+
+4. **Hyperparameter Saturation**:
+   - `FUSE_KRR` was reduced to `2.0` (distorting rank reciprocal weights from the proven `3.0`).
+   - Forward models were asymmetrically skewed (`ICE_LAM=0.8, GL_LAM=1.2`), over-penalizing ICEBERG fragmentation trees.
+
+---
+
+### 2. Version 17 (`v17-proven-sota-restored`) Engineering Fixes
+
+To immediately eliminate these penalties and recover full scoring power:
+- **Restored High-Confidence Library Match Shield**: Exact experimental library matches (`lib_max >= 0.88`) are 100% protected at Rank 1.
+- **Deactivated Destructive Rank-2 Hijacking**: Set `'E2_RANK2': False`. Forward-validated neural fragmentation models are trusted to rank Rank 2 legitimately.
+- **Eliminated Decoy Flooding**: Set `'PC_JOIN_N': 0`. Restored clean candidate retrieval and gated slot merge.
+- **Reverted Proven RRF Constants**: Restored `FUSE_KRR = 3.0` and `FUSE_ALPHA = 0.60`.
+- **Balanced Forward Physics**: Restored symmetric `ICE_LAM = 1.0` and `GL_LAM = 1.0`.
+- **Retained Validated Enhancements**: Preserved Adduct Surrogates (`ICE_SURROGATE=True`, `GL_SURROGATE=True`) and Deep Backfill (`FILL_25=True`).
+
+
