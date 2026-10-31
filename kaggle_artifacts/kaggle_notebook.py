@@ -1414,8 +1414,12 @@ def build_submission(base, pc, eng, ice_scores, gl_scores, cfg, mol_order, sampl
     for mid, s in v4:
         vs = [x for x in s.split(';') if x and x != c['FALLBACK']]
         ICE_LAM, GL_LAM = lam_pair(lib_of.get(mid, 0.0))
-        P_ICE = ICE_LAM if c['POST_ICE_LAM'] is None else c['POST_ICE_LAM']
-        P_GL = GL_LAM if c['POST_GL_LAM'] is None else c['POST_GL_LAM']
+        if lib_of.get(mid, 0.0) >= GATE_TAU:
+            P_ICE = c['ICE_LAM_LIB'] if c['ICE_LAM_LIB'] is not None else 0.0
+            P_GL = c['GL_LAM_LIB'] if c['GL_LAM_LIB'] is not None else 0.0
+        else:
+            P_ICE = ICE_LAM if c['POST_ICE_LAM'] is None else c['POST_ICE_LAM']
+            P_GL = GL_LAM if c['POST_GL_LAM'] is None else c['POST_GL_LAM']
         e = eng.get(str(mid))
         if c['FUSE_SKIP_LIB'] is not None and lib_of.get(mid, 0.0) >= c['FUSE_SKIP_LIB']:
             e = None; stats['fuse']['skipped_lib'] = stats['fuse'].get('skipped_lib', 0) + 1
@@ -2069,12 +2073,12 @@ CFG = dict(
     STAGE_TIMEOUT_S=4 * 3600,
 )
 
-# ── SOTA Top-1 (0.455 -> 0.500+) Plan B Master Breakthrough Overrides ─────────
+# ── SOTA Top-1 (0.455 -> 0.500+) Plan A Master Breakthrough Overrides ─────────
 CFG.update({
-    'VERSION': 'v17-proven-sota-restored',
+    'VERSION': 'v17-plan-a-sota-restored',
     'E2_RANK2': False,
-    'POP_MU': 0.15,
-    'FRAG_LAM': 0.0,
+    'POP_MU': 0.25,
+    'FRAG_LAM': 0.5,
     'FRAG_MODE': 'gap',
     'ICE_LAM': 1.0,
     'GL_LAM': 1.0,
@@ -2083,7 +2087,7 @@ CFG.update({
     'ICE_LAM_LIB': 0.0,
     'GL_LAM_LIB': 0.0,
     'PC_N1': 5000,
-    'PC_JOIN_N': 0,
+    'PC_JOIN_N': 50,
     'PC_JOIN_MAX_LIB': 0.7,
     'ENG_TOPK': 40,
     'FUSE_ENG_K': 40,
