@@ -33,7 +33,7 @@ DEPLOYMENT_QUEUE = [
         "name": "Closing the Evidence Gap v4 (Savko 0.521 Top-1 Solution: Outsider Recall + MIDX Dedup)",
         "dir": REPO_ROOT / "deploy_kernel_gap",
         "target_score": 0.521,
-        "is_currently_running": False
+        "is_currently_running": True
     },
     {
         "id": "midx_0479",
@@ -87,7 +87,7 @@ def load_state() -> dict:
 
 def save_state(state: dict):
     STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps(state, indent=2), encoding="utf-8")
+    STATE_FILE.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
 
 def check_kernel_status() -> str:
     code, out = run_cmd(f"kaggle kernels status {KERNEL_SLUG}")
@@ -235,3 +235,4 @@ def main_loop():
 
 if __name__ == "__main__":
     main_loop()
+
