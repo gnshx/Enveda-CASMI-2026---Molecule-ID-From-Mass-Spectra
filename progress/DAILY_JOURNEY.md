@@ -364,3 +364,67 @@ We downloaded the full execution outputs, `run_manifest.json`, and intermediate 
 
 
 
+
+---
+
+## Day 14 — November 1, 2026 (IST)
+
+### Competition Context
+- **Our peak**: 0.398 | **Top-1**: Savko 0.521 | **Gap**: 0.123 MRR
+- **Available submissions today**: 5
+
+### Critical Finding: Architecture Gap
+
+After deep research into all top public notebooks, we discovered our entire v4n pipeline
+is architecturally inferior to the v4g pipeline used by the entire top-100 leaderboard.
+
+#### The Winning Pipeline Lineage (all use `dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets`):
+
+| Score | Notebook | What it adds |
+|-------|----------|-------------|
+| 0.465 | Gluzdov v4g baseline | Engine1 + Engine2 + PubChem channel + GLACIER/ICEBERG |
+| 0.466 | Saner Turhaner neural025 | Neural spectrum↔structure scorer |
+| 0.472 | alex chilton CUSTOM w_mid=0.75 | Leader-safe consensus with higher neural weight |
+| 0.477 | Spectral Parallax (Tamrazov) | MetFrag-lite fragment check + leader moves |
+| 0.479 | MIDX Dedup Fill (Baidalin) | PubChem doc prior + stereoisomer dedup |
+| 0.521 | Closing the Evidence Gap (Savko) | Outsider recall: 40 outside candidates, ranks 21-25 opened |
+
+### Today's Actions
+
+**1. Kernel v18 (Plan A) monitoring**: Still running when Day 14 started (>1.5h runtime).
+   - Auto-submit script launched: `scripts/auto_submit_v18.sh`
+   - Expected score: 0.398-0.405 (library gate fix restores peak)
+
+**2. Architecture Pivot — 4 v4g Deploy Kernels Created**:
+
+All notebooks pulled and prepared for our kernel ID (136555841):
+
+```
+deploy_kernel_v4g/          → Rozen fork, CUSTOM w_top=0.25, w_mid=0.75 → Target: 0.472
+deploy_kernel_spectral_parallax/ → Tamrazov Spectral Parallax, PHYSICAL=True, FRAG_ON_V2=True → Target: 0.477
+deploy_kernel_midx/         → Baidalin MIDX dedup + doc prior → Target: 0.479
+deploy_kernel_gap/          → Flexonafft Closing the Evidence Gap v4 → Target: 0.490+
+```
+
+All use the same 8 datasets:
+- `dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets` (10.7 GB core)
+- `sanpier/casmi-spectrum-model-v1` (neural scorer)
+- `dmitriigluzdov/casmi26-fold-safe-fpnet`
+- `dmitriigluzdov/casmi26-natural-product-knowledge-table`
+- `dmitriigluzdov/casmi26-natural-product-panel-benchmark`
+- `dmitriigluzdov/casmi26-pubchem-popularity-prior`
+- `sanpier/catalogue-experiment-saner`
+- `metric/rdkit-2026-3-3-wheel`
+
+**3. Git Push**: All 4 kernels committed and pushed to GitHub (`ac834f5`)
+
+### Day 14 Submission Plan
+
+| Slot | Notebook | Target Score |
+|------|----------|-------------|
+| 1 | v18 Plan A (pending) | 0.398-0.405 |
+| 2 | v4g CUSTOM (Rozen fork) | 0.472 |
+| 3 | Spectral Parallax | 0.477 |
+| 4 | MIDX Dedup Fill | 0.479 |
+| 5 | Closing the Gap | 0.490+ |
+
