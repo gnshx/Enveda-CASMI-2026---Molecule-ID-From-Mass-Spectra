@@ -428,3 +428,24 @@ All use the same 8 datasets:
 | 4 | MIDX Dedup Fill | 0.479 |
 | 5 | Closing the Gap | 0.490+ |
 
+
+### Day 14 Submissions Update (November 1, 2026)
+
+1. **Submission #57848356** (Version 18 Plan A):
+   - **Timestamp**: `2026-10-31 19:09:59 UTC`
+   - **Architecture**: `v4n` with Library Gate override bug fix, `PC_JOIN_N = 50`, `POP_MU = 0.25`, adduct surrogates.
+   - **Status**: `SubmissionStatus.PENDING` (actively evaluating on hidden test).
+
+2. **Submission #57849573** (Version 19 Top-1 Pipeline):
+   - **Timestamp**: `2026-10-31 20:09:50 UTC`
+   - **Description**: `Savko 0.521 Top-1: Closing the Evidence Gap v4 (Outsider Recall + MIDX Dedup)`
+   - **Architecture**:
+     - `v4g` 10.7 GB candidate & model assets
+     - Saner Turhaner neural spectrum-to-structure cross-encoder
+     - Leader-safe consensus ($w_{\text{top}}=0.25, w_{\text{mid}}=0.75$)
+     - MetFrag-lite physical bond-cleavage re-scorer (5-shield gate)
+     - MIDX documentation prior + in-pool InChIKey14 deduplication
+     - Outsider Candidate Recall: scores 40 outside candidates, rescues into ranks 21–25
+   - **Status**: `SubmissionStatus.PENDING` (actively evaluating on hidden test).
+   - **Submission Mechanism**: Code competition API `api.competition_submit_code` directly from Version 19 kernel output.
+

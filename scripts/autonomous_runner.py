@@ -113,36 +113,32 @@ def wait_for_kernel_completion(poll_interval_sec=60) -> bool:
         time.sleep(poll_interval_sec)
 
 def download_and_submit(job_meta: dict) -> tuple[bool, str, float]:
-    out_dir = Path(f"/tmp/kernel_out_{int(time.time())}")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    log(f"Downloading output to {out_dir}...")
-    code, out = run_cmd(f"kaggle kernels output {KERNEL_SLUG}", cwd=out_dir)
-    log(f"Output download result: {out[:200]}")
-    
-    sub_file = out_dir / "submission.csv"
-    if not sub_file.is_file():
-        # Search for any csv file that might be the submission
-        csvs = list(out_dir.glob("*.csv"))
-        log(f"Found CSV files: {[c.name for c in csvs]}")
-        sub_file = next((c for c in csvs if "sub" in c.name.lower()), None)
-    
-    if not sub_file or not sub_file.is_file():
-        log(f"Error: No submission.csv found in {out_dir}")
-        return False, "", 0.0
-
     msg = f"{job_meta['name']} (target {job_meta['target_score']})"
-    log(f"Submitting {sub_file.name} to {COMPETITION_SLUG} with message: '{msg}'...")
-    sub_cmd = f'kaggle competitions submit -c {COMPETITION_SLUG} -f "{sub_file}" -m "{msg}"'
-    code, sub_out = run_cmd(sub_cmd)
+    log(f"Submitting code output to {COMPETITION_SLUG} with message: '{msg}'...")
+    
+    # In Code Competitions, use competition_submit_code via KaggleApi
+    submit_code_script = f"""
+from kaggle.api.kaggle_api_extended import KaggleApi
+api = KaggleApi()
+api.authenticate()
+res = api.competition_submit_code(
+    file_name='submission.csv',
+    message='{msg}',
+    competition='{COMPETITION_SLUG}',
+    kernel='{KERNEL_SLUG}'
+)
+print('SUCCESS_REF:', getattr(res, 'ref', res))
+"""
+    code, sub_out = run_cmd(f"python3 -c \"{submit_code_script}\"")
     log(f"Submission command output: {sub_out}")
-    if code != 0 and "Successfully submitted" not in sub_out:
+    if "SUCCESS_REF" not in sub_out and code != 0:
         log(f"Submission failed: {sub_out}")
         return False, sub_out, 0.0
 
     # Poll for score
     log("Polling competition submissions table for public score...")
     score = 0.0
-    for _ in range(12): # poll up to 3 minutes
+    for _ in range(24): # poll up to 6 minutes
         time.sleep(15)
         code, table_out = run_cmd(f"kaggle competitions submissions -c {COMPETITION_SLUG}")
         lines = table_out.splitlines()
