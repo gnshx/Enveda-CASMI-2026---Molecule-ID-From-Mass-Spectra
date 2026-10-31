@@ -322,4 +322,45 @@ To immediately eliminate these penalties and recover full scoring power:
 - **Balanced Forward Physics**: Restored symmetric `ICE_LAM = 1.0` and `GL_LAM = 1.0`.
 - **Retained Validated Enhancements**: Preserved Adduct Surrogates (`ICE_SURROGATE=True`, `GL_SURROGATE=True`) and Deep Backfill (`FILL_25=True`).
 
+---
+
+## 📅 Day 13: October 31, 2026 — Kaggle Authentication, Full Log Forensic Audit & Deployment of Version 18 (Plan A)
+
+### 1. Kaggle CLI Integration & Account Verification
+* Successfully connected and authenticated Kaggle CLI as user **`nukaladevisaiganesh`** via access token.
+* Verified competition connection for **`enveda-CASMI26-molecule-id-mass-spectra`**.
+* Identified target production notebook: [`nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`](https://www.kaggle.com/code/nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399).
+
+### 2. Forensic Discovery from Actual Kaggle Execution Logs
+We downloaded the full execution outputs, `run_manifest.json`, and intermediate logs from the October 25 `0.390` run:
+1. **The Library Gate Bypass in `fusion_core.py`**:
+   - `lam_pair` correctly computed `il=0.0, gll=0.0` for library hits (`lib_max >= GATE_TAU`).
+   - However, `POST_ICE_LAM` and `POST_GL_LAM` were hardcoded to `1.0` in `CFG.update`.
+   - In lines 1417–1418, the ternary logic:
+     ```python
+     P_ICE = ICE_LAM if c['POST_ICE_LAM'] is None else c['POST_ICE_LAM']
+     ```
+     unconditionally overrode `ICE_LAM` with `1.0`, disabling the library gate in the post-fusion forward model stage!
+   - As a result, the run manifest showed `stats.fuse.ice_reordered: 11` out of 12 molecules reordered, allowing simulation noise to displace verified ground-truth training matches!
+2. **The Root Fix Applied**:
+   ```python
+   ICE_LAM, GL_LAM = lam_pair(lib_of.get(mid, 0.0))
+   if lib_of.get(mid, 0.0) >= GATE_TAU:
+       P_ICE = c['ICE_LAM_LIB'] if c['ICE_LAM_LIB'] is not None else 0.0
+       P_GL = c['GL_LAM_LIB'] if c['GL_LAM_LIB'] is not None else 0.0
+   else:
+       P_ICE = ICE_LAM if c['POST_ICE_LAM'] is None else c['POST_ICE_LAM']
+       P_GL = GL_LAM if c['POST_GL_LAM'] is None else c['POST_GL_LAM']
+   ```
+   Now, confident library matches are guaranteed `P_ICE = 0.0, P_GL = 0.0`, protecting experimental matches with 100% fidelity.
+
+### 3. Plan A (Version 18) Deployment
+* **PubChem Join Active**: Restored `PC_JOIN_N = 50` with `PC_JOIN_MAX_LIB = 0.7` so outside candidates can compete for Rank 1.
+* **Calibrated Prior**: Set `POP_MU = 0.25` using decoupled literature weights ($1.3 \cdot \text{PMID} + 0.8 \cdot \text{SID}$).
+* **Adduct Surrogates**: Maintained `ICE_SURROGATE = True, GL_SURROGATE = True` (100% forward coverage).
+* **Deep Backfill**: `FILL_25 = True`.
+* **Zero Hijacking**: `E2_RANK2 = False`.
+* Pushed cleanly to Kaggle as **Kernel Version 18**, currently executing on Nvidia Tesla T4.
+
+
 

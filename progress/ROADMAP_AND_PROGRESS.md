@@ -42,6 +42,12 @@
    │
    ▼
 [0.455+] Phase 10 Plan B Master: E006 + e2rank2 + PubChemLite + CC BY ChEBI + Adduct Surrogates (v16)
+   │
+   ▼
+[0.420 - 0.435] Phase 11: Plan A Master Restored (v18: Library Gate override fixed, PC_JOIN_N=50, POP_MU=0.25, Surrogates)
+   │
+   ▼
+[0.450 - 0.500+] Phase 12: Variance Calibration (Plan B) & Physical Consensus Reranking (Plan C-E)
 ```
 
 ---
