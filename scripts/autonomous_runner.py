@@ -64,15 +64,16 @@ def wait_for_kernel_completion(poll_interval_sec=30, timeout_minutes=90) -> bool
             return False
         time.sleep(poll_interval_sec)
 
-def submit_code_kernel(message: str) -> tuple[bool, str, float]:
-    log(f"Submitting kernel code to competition '{COMPETITION_SLUG}'...")
+def submit_code_kernel(message: str, kernel_version: int = 20) -> tuple[bool, str, float]:
+    log(f"Submitting kernel code v{kernel_version} to competition '{COMPETITION_SLUG}'...")
     api = get_kaggle_api()
     try:
         res = api.competition_submit_code(
             file_name="submission.csv",
             message=message,
             competition=COMPETITION_SLUG,
-            kernel=KERNEL_SLUG
+            kernel=KERNEL_SLUG,
+            kernel_version=int(kernel_version)
         )
         log(f"Code submission API result: {res}")
     except Exception as e:
@@ -82,25 +83,25 @@ def submit_code_kernel(message: str) -> tuple[bool, str, float]:
     # Poll for score in competition submissions table
     log("Polling competition submissions for public score...")
     score = 0.0
-    for poll_idx in range(40):  # poll up to 10 minutes (15s * 40)
+    for poll_idx in range(60):  # poll up to 15 minutes (15s * 60)
         time.sleep(15)
         try:
             subs = api.competition_submissions(COMPETITION_SLUG)
             if subs:
                 latest = list(subs)[0]
-                status = getattr(latest, "status", None)
-                public_score = getattr(latest, "publicScore", None)
+                status_raw = str(getattr(latest, "status", ""))
+                public_score = str(getattr(latest, "public_score", getattr(latest, "publicScore", "")))
                 ref = getattr(latest, "ref", None)
-                log(f"Sub poll #{poll_idx+1}: Ref={ref}, Status={status}, PublicScore={public_score}")
-                if status == "COMPLETE":
+                log(f"Sub poll #{poll_idx+1}: Ref={ref}, Status={status_raw}, PublicScore={public_score}")
+                if "COMPLETE" in status_raw and public_score.strip():
                     try:
                         score = float(public_score)
                         log(f"SUCCESS! Official Public Score: {score}")
                         return True, f"Ref={ref}", score
                     except (ValueError, TypeError):
                         pass
-                elif status in ("ERROR", "FAILED"):
-                    error_desc = getattr(latest, "errorDescription", "Unknown error")
+                elif "ERROR" in status_raw or "FAILED" in status_raw:
+                    error_desc = getattr(latest, "errorDescription", getattr(latest, "error_description", "Unknown error"))
                     log(f"Submission failed with error: {error_desc}")
                     return False, str(error_desc), 0.0
         except Exception as e:

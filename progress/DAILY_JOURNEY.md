@@ -456,3 +456,17 @@ All use the same 8 datasets:
 - **Description**: Savko Gap v4 + Kunal BIO_W=0.03 + PIN_OLD_LEADER + K14 Dedup + LIB_HIT_GATE=0.80
 - **Achieved Public Score**: **`0.0000`**
 - **Status**: Complete & Verified
+
+
+### Submission #57868544: Version 20 Deployment (November 1, 2026)
+- **Timestamp**: `2026-11-01 10:20:45 UTC`
+- **Submission Ref**: `57868544`
+- **Kernel Version**: `Version 20`
+- **Kernel URL**: `https://www.kaggle.com/code/nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
+- **Status**: `SubmissionStatus.PENDING` (scoring on hidden test)
+- **Architecture & Key Upgrades**:
+  1. **Biological Pathway Prior (`BIO_W = 0.03`)**: Gated metabolites from KEGG, MetaCyc, ChEBI, and LIPID MAPS (`src_metabolite_pathway`, `src_chebi`, `src_lipidmaps` in `pool_popularity.csv`).
+  2. **Pinned Old Leader Floor (`PIN_OLD_LEADER = True`)**: If physical fragment re-scorer promotes a new leader, the former consensus leader is pinned at Rank 2.
+  3. **Broadened Library-Hit Gate (`LIB_HIT_GATE = 0.80`)**: Lowered from 0.87 to 0.80 so more confident reference spectral matches gain the library bonus.
+  4. **InChIKey14 Metric-Exact Deduplication (`ENABLE_K14_DEDUP = True`)**: Purges redundant stereoisomers, backfilling with neural-scored outside candidates (`OUTSIDER_FILL = True`).
+- **Target**: Surpassing previous best of **0.478** towards **0.500+**.
