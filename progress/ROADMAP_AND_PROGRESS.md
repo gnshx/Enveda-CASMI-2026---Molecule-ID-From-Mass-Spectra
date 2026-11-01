@@ -194,4 +194,4 @@ Enveda-CASMI-2026/
 └── models/                                  # Checkpoints & serialized weights
 ```
 
-| 2026-11-01 | Version 20 | Savko Gap v4 + Kunal BIO_W=0.03 + PIN_OLD_LEADER + K14 Dedup | **PENDING** (Sub #57868544) | Evaluating |
+| 2026-11-01 | Version 20 | Savko Gap v4 + Kunal BIO_W=0.03 + PIN_OLD_LEADER + K14 Dedup | **0.477** (Sub #57868544) | Succeeded |

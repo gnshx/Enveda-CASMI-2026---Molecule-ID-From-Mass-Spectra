@@ -463,7 +463,7 @@ All use the same 8 datasets:
 - **Submission Ref**: `57868544`
 - **Kernel Version**: `Version 20`
 - **Kernel URL**: `https://www.kaggle.com/code/nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
-- **Status**: `SubmissionStatus.PENDING` (scoring on hidden test)
+- **Status**: `SubmissionStatus.COMPLETE` · **Score: 0.477**
 - **Architecture & Key Upgrades**:
   1. **Biological Pathway Prior (`BIO_W = 0.03`)**: Gated metabolites from KEGG, MetaCyc, ChEBI, and LIPID MAPS (`src_metabolite_pathway`, `src_chebi`, `src_lipidmaps` in `pool_popularity.csv`).
   2. **Pinned Old Leader Floor (`PIN_OLD_LEADER = True`)**: If physical fragment re-scorer promotes a new leader, the former consensus leader is pinned at Rank 2.
