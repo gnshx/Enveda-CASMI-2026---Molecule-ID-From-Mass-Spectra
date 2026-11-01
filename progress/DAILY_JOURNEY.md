@@ -449,3 +449,10 @@ All use the same 8 datasets:
    - **Status**: `SubmissionStatus.PENDING` (actively evaluating on hidden test).
    - **Submission Mechanism**: Code competition API `api.competition_submit_code` directly from Version 19 kernel output.
 
+
+### Run Result: Version 20
+- **Timestamp**: 2026-11-01 10:18:34 UTC
+- **Kernel**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
+- **Description**: Savko Gap v4 + Kunal BIO_W=0.03 + PIN_OLD_LEADER + K14 Dedup + LIB_HIT_GATE=0.80
+- **Achieved Public Score**: **`0.0000`**
+- **Status**: Complete & Verified

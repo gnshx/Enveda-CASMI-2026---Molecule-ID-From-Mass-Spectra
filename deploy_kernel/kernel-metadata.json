@@ -1,0 +1,43 @@
+{
+  "id": "nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399",
+  "id_no": 136555841,
+  "title": "CASMI26 | v4n + Engine Fusion + Union [LB 0.399]",
+  "code_file": "casmi26-v4n-engine-fusion-union-lb-0-399.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "gpu"
+  ],
+  "dataset_sources": [
+    "prvsiyan/casmi26-ranker-features",
+    "prvsiyan/casmi26-fp-models-v2",
+    "dmitriigluzdov/casmi26-pubchem-popularity-prior",
+    "megayak/casmi26-simulated-ranker-rows",
+    "ahmedberatozer/casmi26-fpnet-full1",
+    "ahmedberatozer/casmi26-glacier",
+    "ahmedberatozer/casmi26-iceberg",
+    "ahmedberatozer/casmi26-pubchem-tier",
+    "ahmedberatozer/casmi26-v2-pool",
+    "ahmedberatozer/casmi26-v3-models",
+    "ahmedberatozer/casmi26-v4b-models",
+    "prvsiyan/chebi-lipidmaps-casmi26",
+    "prvsiyan/coconut-casmi26-candidates",
+    "metric/rdkit-2026-3-3-wheel"
+  ],
+  "kernel_sources": [
+    "ahmedberatozer/casmi26-v14-pubchemlite",
+    "dmitriigluzdov/casmi-26-from-spectra-to-structures",
+    "evgendvorkin/enveda-casmi-2026",
+    "dmitriigluzdov/casmi-26-the-data-behind-spectra-to-structures"
+  ],
+  "competition_sources": [
+    "enveda-CASMI26-molecule-id-mass-spectra"
+  ],
+  "model_sources": [],
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461",
+  "machine_shape": "NvidiaTeslaT4"
+}

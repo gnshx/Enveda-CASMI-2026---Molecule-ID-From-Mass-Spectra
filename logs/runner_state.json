@@ -1,0 +1,10 @@
+{
+  "current_queue_idx": 1,
+  "active_job": {
+    "id": "gap_v4_top1",
+    "name": "Closing the Evidence Gap v4 (Savko 0.521 Top-1 Solution: Outsider Recall + MIDX Dedup)",
+    "target_score": 0.521,
+    "kernel_version": 19,
+    "is_currently_running": true
+  }
+}
