@@ -470,3 +470,25 @@ All use the same 8 datasets:
   3. **Broadened Library-Hit Gate (`LIB_HIT_GATE = 0.80`)**: Lowered from 0.87 to 0.80 so more confident reference spectral matches gain the library bonus.
   4. **InChIKey14 Metric-Exact Deduplication (`ENABLE_K14_DEDUP = True`)**: Purges redundant stereoisomers, backfilling with neural-scored outside candidates (`OUTSIDER_FILL = True`).
 - **Target**: Surpassing previous best of **0.478** towards **0.500+**.
+
+
+### Submission #57904685 & #57907054: Version 21 Evaluation (November 2, 2026)
+- **Timestamp**: `2026-11-02 16:31:15 UTC`
+- **Kernel Version**: `Version 21`
+- **Official Score**: **`0.473`**
+- **Analysis**:
+  - The addition of `ahmedberatozer/casmi26-spectrum-model-long` in an equal 50/50 ensemble caused a -0.005 regression from V19 (0.478 -> 0.473).
+  - The long model (trained 40x2000 steps) overfits training distributions and degrades rank discrimination on hidden test molecules.
+  - Decision: purge the long model and immediately revert to the pure `sanpier/casmi-spectrum-model-v1` core.
+
+### Deployment of Version 22: Baidalin MIDX Exact Dedup Fill (Target 0.479)
+- **Timestamp**: `2026-11-02 16:31:15 UTC`
+- **Kernel Version**: `Version 22`
+- **Source**: `deploy_kernel_midx/`
+- **Architecture**:
+  - Pure Saner Turhaner v1 cross-encoder (`sanpier/casmi-spectrum-model-v1`).
+  - MetFrag-lite physical fragment check strictly guarding Rank 1 on V2 order.
+  - Metric-exact In-Pool InChIKey14 deduplication: drops redundant stereoisomers from ranks 2–25.
+  - Verified PubChem documentation prior (`POP_W=0.10, SPEC_W=0.05, NP_W=0.02, LIB_HIT_GATE=0.87`).
+  - No noisy long-model contamination; no biological prior distortion.
+- **Status**: Queued & Running on Kaggle. Target: **0.479+**.

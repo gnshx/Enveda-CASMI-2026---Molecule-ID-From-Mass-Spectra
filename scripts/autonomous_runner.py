@@ -141,11 +141,11 @@ def record_journey_and_roadmap(v_name: str, desc: str, score: float):
             roadmap_file.write_text(content, encoding="utf-8")
             log("Appended run result to progress/ROADMAP_AND_PROGRESS.md")
 
-def run_v21_and_monitor():
-    log("=== V21 Pipeline Monitor & Autonomous Submit ===")
-    v_name = "Version 21"
-    v_desc = "Savko v6 Two-Model Neural Ensemble (Saner v1 + Ahmed Berat Ozer Long) + MIDX Dedup"
-    v_version = 21
+def run_v22_and_monitor():
+    log("=== V22 Pipeline Monitor & Autonomous Submit ===")
+    v_name = "Version 22"
+    v_desc = "Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + Skeletal Dedup LB 0.479)"
+    v_version = 22
 
     # Step 1: Wait for running kernel to complete
     success = wait_for_kernel_completion(poll_interval_sec=30, timeout_minutes=90)
@@ -163,4 +163,4 @@ def run_v21_and_monitor():
     log(f"=== {v_name} processing complete with score {score:.4f} ===")
 
 if __name__ == "__main__":
-    run_v21_and_monitor()
+    run_v22_and_monitor()
