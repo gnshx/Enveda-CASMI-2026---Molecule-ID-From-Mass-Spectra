@@ -492,3 +492,10 @@ All use the same 8 datasets:
   - Verified PubChem documentation prior (`POP_W=0.10, SPEC_W=0.05, NP_W=0.02, LIB_HIT_GATE=0.87`).
   - No noisy long-model contamination; no biological prior distortion.
 - **Status**: Queued & Running on Kaggle. Target: **0.479+**.
+
+### Run Result: Version 22
+- **Timestamp**: 2026-11-02 17:18:08 UTC
+- **Kernel**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
+- **Description**: Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + Skeletal Dedup LB 0.479)
+- **Achieved Public Score**: **`0.0000`**
+- **Status**: Complete & Verified
