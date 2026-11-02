@@ -141,10 +141,11 @@ def record_journey_and_roadmap(v_name: str, desc: str, score: float):
             roadmap_file.write_text(content, encoding="utf-8")
             log("Appended run result to progress/ROADMAP_AND_PROGRESS.md")
 
-def run_v20_and_monitor():
-    log("=== V20 Pipeline Monitor & Autonomous Submit ===")
-    v_name = "Version 20"
-    v_desc = "Savko Gap v4 + Kunal BIO_W=0.03 + PIN_OLD_LEADER + K14 Dedup + LIB_HIT_GATE=0.80"
+def run_v21_and_monitor():
+    log("=== V21 Pipeline Monitor & Autonomous Submit ===")
+    v_name = "Version 21"
+    v_desc = "Savko v6 Two-Model Neural Ensemble (Saner v1 + Ahmed Berat Ozer Long) + MIDX Dedup"
+    v_version = 21
 
     # Step 1: Wait for running kernel to complete
     success = wait_for_kernel_completion(poll_interval_sec=30, timeout_minutes=90)
@@ -152,9 +153,9 @@ def run_v20_and_monitor():
         log("Kernel run did not complete successfully. Exiting.")
         return
 
-    # Step 2: Submit code via Kaggle API
+    # Step 2: Submit code via Kaggle API with explicit kernel_version
     msg = f"{v_name}: {v_desc}"
-    sub_ok, details, score = submit_code_kernel(msg)
+    sub_ok, details, score = submit_code_kernel(msg, kernel_version=v_version)
     
     # Step 3: Record results and push git
     record_journey_and_roadmap(v_name, v_desc, score)
@@ -162,4 +163,4 @@ def run_v20_and_monitor():
     log(f"=== {v_name} processing complete with score {score:.4f} ===")
 
 if __name__ == "__main__":
-    run_v20_and_monitor()
+    run_v21_and_monitor()

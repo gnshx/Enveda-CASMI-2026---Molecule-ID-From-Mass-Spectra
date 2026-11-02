@@ -21,7 +21,8 @@
     "dmitriigluzdov/casmi26-pubchem-popularity-prior",
     "dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets",
     "sanpier/catalogue-experiment-saner",
-    "metric/rdkit-2026-3-3-wheel"
+    "metric/rdkit-2026-3-3-wheel",
+    "ahmedberatozer/casmi26-spectrum-model-long"
   ],
   "kernel_sources": [],
   "competition_sources": [
@@ -31,4 +32,3 @@
   "docker_image": "gcr.io/kaggle-private-byod/python@sha256:9a6bcfda6d03b2cd9aa347ee8c1bae62043328ed0f4afe9bda014e4f8bbf9435",
   "machine_shape": "NvidiaTeslaT4"
 }
-
