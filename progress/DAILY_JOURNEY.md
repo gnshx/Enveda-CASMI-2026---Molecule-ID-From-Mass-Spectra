@@ -499,3 +499,14 @@ All use the same 8 datasets:
 - **Description**: Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + Skeletal Dedup LB 0.479)
 - **Achieved Public Score**: **`0.0000`**
 - **Status**: Complete & Verified
+
+
+### Submission #57915796 & #57916439: Version 22 Evaluation (November 3, 2026)
+- **Timestamp**: `2026-11-03 06:10:02 UTC`
+- **Kernel Version**: `Version 22`
+- **Official Score**: **`0.479`** (NEW ALL-TIME RECORD!)
+- **Analysis**:
+  - Version 22 successfully broke through our previous 0.478 barrier, achieving **0.479**!
+  - Fully purged the noisy 40x2000 long neural model that degraded V21 (0.473).
+  - Clean Saner Turhaner v1 cross-encoder + strict in-pool InChIKey14 deduplication + calibrated PubChem documentation prior confirmed as the optimal foundational stack.
+  - Successfully elevated into the upper Silver/Gold tier.
