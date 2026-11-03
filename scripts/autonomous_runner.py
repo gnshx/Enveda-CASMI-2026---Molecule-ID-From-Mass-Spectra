@@ -28,22 +28,39 @@ def log(msg: str):
     with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(line + "\n")
 
-def run_cmd(cmd: str, cwd=None) -> tuple[int, str]:
-    res = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd)
-    return res.returncode, (res.stdout + "\n" + res.stderr).strip()
+def run_cmd(cmd: str, cwd=None, timeout_sec=60) -> tuple[int, str]:
+    try:
+        res = subprocess.run(cmd, shell=True, capture_output=True, text=True, cwd=cwd, timeout=timeout_sec)
+        return res.returncode, (res.stdout + "\n" + res.stderr).strip()
+    except subprocess.TimeoutExpired:
+        log(f"Command timed out after {timeout_sec}s: {cmd}")
+        return -1, "TIMEOUT"
+    except Exception as e:
+        log(f"Command exception: {e}")
+        return -1, str(e)
 
-def get_kaggle_api():
-    api = KaggleApi()
-    api.authenticate()
-    return api
+def get_kaggle_api(retries=5, delay=5):
+    for attempt in range(retries):
+        try:
+            api = KaggleApi()
+            api.authenticate()
+            return api
+        except Exception as e:
+            log(f"KaggleApi authenticate attempt {attempt+1}/{retries} failed: {e}. Retrying in {delay}s...")
+            time.sleep(delay)
+            delay = min(delay * 2, 30)
+    raise RuntimeError("Failed to authenticate with KaggleApi after multiple retries")
 
 def check_kernel_status() -> str:
-    code, out = run_cmd(f"kaggle kernels status {KERNEL_SLUG}")
-    for line in out.splitlines():
-        if "has status" in line:
-            raw = line.split("has status")[-1].strip().strip('"')
-            clean = raw.replace("KernelWorkerStatus.", "")
-            return clean
+    for attempt in range(3):
+        code, out = run_cmd(f"kaggle kernels status {KERNEL_SLUG}", timeout_sec=45)
+        for line in out.splitlines():
+            if "has status" in line:
+                raw = line.split("has status")[-1].strip().strip('"')
+                clean = raw.replace("KernelWorkerStatus.", "")
+                return clean
+        if attempt < 2:
+            time.sleep(5)
     return "UNKNOWN"
 
 def wait_for_kernel_completion(poll_interval_sec=30, timeout_minutes=90) -> bool:
@@ -64,10 +81,10 @@ def wait_for_kernel_completion(poll_interval_sec=30, timeout_minutes=90) -> bool
             return False
         time.sleep(poll_interval_sec)
 
-def submit_code_kernel(message: str, kernel_version: int = 20) -> tuple[bool, str, float]:
+def submit_code_kernel(message: str, kernel_version: int = 23) -> tuple[bool, str, float]:
     log(f"Submitting kernel code v{kernel_version} to competition '{COMPETITION_SLUG}'...")
-    api = get_kaggle_api()
     try:
+        api = get_kaggle_api()
         res = api.competition_submit_code(
             file_name="submission.csv",
             message=message,
@@ -86,6 +103,7 @@ def submit_code_kernel(message: str, kernel_version: int = 20) -> tuple[bool, st
     for poll_idx in range(60):  # poll up to 15 minutes (15s * 60)
         time.sleep(15)
         try:
+            api = get_kaggle_api()
             subs = api.competition_submissions(COMPETITION_SLUG)
             if subs:
                 latest = list(subs)[0]
@@ -141,11 +159,26 @@ def record_journey_and_roadmap(v_name: str, desc: str, score: float):
             roadmap_file.write_text(content, encoding="utf-8")
             log("Appended run result to progress/ROADMAP_AND_PROGRESS.md")
 
-def run_v22_and_monitor():
-    log("=== V22 Pipeline Monitor & Autonomous Submit ===")
-    v_name = "Version 22"
-    v_desc = "Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + Skeletal Dedup LB 0.479)"
-    v_version = 22
+def run_v23_and_monitor():
+    log("=== V23 Pipeline Monitor & Autonomous Submit ===")
+    v_name = "Version 23"
+    v_desc = "Version 23: Pure Rank 1 Shield (w_top=0.00, w_mid=0.75) + MIDX Dedup"
+    v_version = 23
+
+    # Step 0: Ensure kernel is pushed
+    log(f"Checking current kernel status for {v_name}...")
+    status = check_kernel_status()
+    if status not in ("RUNNING", "QUEUED"):
+        log(f"Kernel is {status}. Pushing Version 23 to Kaggle...")
+        pushed = False
+        for push_attempt in range(5):
+            code, out = run_cmd("kaggle kernels push -p deploy_kernel_midx", cwd=REPO_ROOT, timeout_sec=60)
+            log(f"Push attempt {push_attempt+1}: code={code}, out={out[:150]}")
+            if code == 0 and ("successfully" in out.lower() or "has been pushed" in out.lower() or "kernel" in out.lower()):
+                pushed = True
+                log("Kernel pushed successfully to Kaggle!")
+                break
+            time.sleep(10)
 
     # Step 1: Wait for running kernel to complete
     success = wait_for_kernel_completion(poll_interval_sec=30, timeout_minutes=90)
@@ -163,4 +196,4 @@ def run_v22_and_monitor():
     log(f"=== {v_name} processing complete with score {score:.4f} ===")
 
 if __name__ == "__main__":
-    run_v22_and_monitor()
+    run_v23_and_monitor()
