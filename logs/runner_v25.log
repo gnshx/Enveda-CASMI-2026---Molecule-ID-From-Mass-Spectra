@@ -1,0 +1,18 @@
+[2026-11-04 11:20:55 UTC] === V25 Pipeline Monitor & Autonomous Submit ===
+[2026-11-04 11:20:55 UTC] Waiting for kernel 'nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399' (v25) to complete (timeout: 90m)...
+[2026-11-04 11:20:59 UTC] Kernel status: RUNNING (elapsed: 0.1m)
+[2026-11-04 11:21:33 UTC] Kernel status: RUNNING (elapsed: 0.6m)
+[2026-11-04 11:22:07 UTC] Kernel status: RUNNING (elapsed: 1.2m)
+[2026-11-04 11:22:41 UTC] Kernel status: RUNNING (elapsed: 1.8m)
+[2026-11-04 11:23:15 UTC] Kernel status: RUNNING (elapsed: 2.3m)
+[2026-11-04 11:23:49 UTC] Kernel status: RUNNING (elapsed: 2.9m)
+[2026-11-04 11:24:23 UTC] Kernel status: RUNNING (elapsed: 3.5m)
+[2026-11-04 11:24:57 UTC] Kernel status: RUNNING (elapsed: 4.0m)
+[2026-11-04 11:25:31 UTC] Kernel status: RUNNING (elapsed: 4.6m)
+[2026-11-04 11:26:04 UTC] Kernel status: RUNNING (elapsed: 5.2m)
+[2026-11-04 11:26:38 UTC] Kernel status: RUNNING (elapsed: 5.7m)
+[2026-11-04 11:27:12 UTC] Kernel status: RUNNING (elapsed: 6.3m)
+[2026-11-04 11:27:46 UTC] Kernel status: RUNNING (elapsed: 6.9m)
+[2026-11-04 11:28:20 UTC] Kernel status: RUNNING (elapsed: 7.4m)
+[2026-11-04 11:28:53 UTC] Kernel status: RUNNING (elapsed: 8.0m)
+[2026-11-04 11:29:27 UTC] Kernel status: RUNNING (elapsed: 8.5m)

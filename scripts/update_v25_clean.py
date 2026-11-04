@@ -18,3 +18,4 @@ nb['cells'][0]['source'] = [
 
 v25_nb_path.write_text(json.dumps(nb, indent=1))
 print("Version 25 Cell 0 cleaned.")
+

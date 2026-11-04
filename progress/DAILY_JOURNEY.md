@@ -510,3 +510,10 @@ All use the same 8 datasets:
   - Fully purged the noisy 40x2000 long neural model that degraded V21 (0.473).
   - Clean Saner Turhaner v1 cross-encoder + strict in-pool InChIKey14 deduplication + calibrated PubChem documentation prior confirmed as the optimal foundational stack.
   - Successfully elevated into the upper Silver/Gold tier.
+
+### Run Result: Version 24
+- **Timestamp**: 2026-11-04 11:29:45 UTC
+- **Kernel**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
+- **Description**: Version 24: Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup + Rank 1 Shield (Target LB 0.480+)
+- **Achieved Public Score**: **`0.0000`**
+- **Status**: Complete & Verified
