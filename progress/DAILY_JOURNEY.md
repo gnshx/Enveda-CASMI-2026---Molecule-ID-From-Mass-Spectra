@@ -538,3 +538,10 @@ All use the same 8 datasets:
 - **Description**: Version 24: Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup
 - **Official Public Score**: **`0.4800`**
 - **Status**: Complete & Verified
+
+### Official Score Verified: Version 25
+- **Timestamp**: 2026-11-04 16:24:43 UTC
+- **Submission Ref**: `57983294`
+- **Description**: Version 25: Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup
+- **Official Public Score**: **`0.4720`**
+- **Status**: Complete & Verified
