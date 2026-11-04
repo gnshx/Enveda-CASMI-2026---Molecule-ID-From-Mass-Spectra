@@ -1,0 +1,22 @@
+{
+  "runtime_test.py": "a9f0c849913e25e7f1de73b26ea4505df70a754c36a9446e367280b2cad05667",
+  "environment.json": "26f6d15fe5f7399e2e30313dc2d320a83d0dda1c5bf5561eae467f27e9b715f2",
+  "refit_history.json": "7801237d850a9e28f030e6c9cb205c2567fb61fa41a166fdfac5a21fc4988ca8",
+  "best_validation_model.pt": "969d13443fcf168eae1e00e56a8e0ae87dcb16f337cb6dbac959e7cd218f089c",
+  "model.py": "2547418857386d1c2513fd1ab6c70961e6a96e73d9d495bbfe3052197e69dc39",
+  "training_result.json": "b1ec8850960aa1d439f72a73f432b5daedfee5764509885db91b56e53496f92e",
+  "data_audit.json": "b6cbfbfd3d936066ad53b6846f09433827b4180718e99ccb2f352ae568624fed",
+  "validation_predictions.csv": "64245d262418beb3750c99eebeafc56f5659860b200a4812bc7a95ff5e451344",
+  "prepare.py": "3cd819e73715e657e9b1d280ffc1a8de3210b106431f52d1756ce813b86d223b",
+  "config.json": "563fb2a2a81ca48ea094f9ab78c157a48a6e9a5503e85e6ce8f0fb3615c1cc03",
+  "train.py": "6204c62462be4f686fa2e1d46d7d42b994c0087ee8e51fc84208e299d72081d2",
+  "molecules.parquet": "f566b7344cae9299e187f1de4b7a783098e92bbf6b970f5cd5b2f5fe35e53276",
+  "final_model.pt": "44436b2daec64373e66f9120dd2389c24fc83dd9430ebeeac18e3cb49dcb9642",
+  "last_validation_model.pt": "b61465a8b39764c06a417161ff272a622e750ba7577108a9aa243315c96c94b4",
+  "spectrum_split_manifest.parquet": "84c5e37e1a468fedd0c3e508516c93e81e39c38efc618101d081e77447bf7c70",
+  "inference.py": "c43086b2150ab912f812ec152676422d592fae2b2b835458aabcfe32591fa04a",
+  "validation_candidates.npz": "7a29d889e0022f142dab1a441a9c6540637a53a4f36bec57fd6b1f1931af8848",
+  "training_history.json": "04910f1028a01d505253d4f713c043e84dc37ed91127fcde7f5b51403c96b702",
+  "README.txt": "77aeeb5d1a08d6269c8c8454053e665ff5eee5eb74fac4939838c0f2fdd7397f",
+  "features.py": "a97ad9b3ab3711517864d56e497e1672cb29bb05683c72b52db9f9b0a17b1455"
+}

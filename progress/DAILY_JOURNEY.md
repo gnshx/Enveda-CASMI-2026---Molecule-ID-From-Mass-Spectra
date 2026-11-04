@@ -545,3 +545,10 @@ All use the same 8 datasets:
 - **Description**: Version 25: Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup
 - **Official Public Score**: **`0.4720`**
 - **Status**: Complete & Verified
+
+### Run Result: Version 26
+- **Timestamp**: 2026-11-04 16:50:10 UTC
+- **Kernel**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
+- **Description**: Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup (Target LB 0.484+)
+- **Achieved Public Score**: **`0.0000`**
+- **Status**: Submitted (score pending)

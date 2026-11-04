@@ -1,0 +1,7 @@
+{
+  "best_epoch": 1,
+  "best_diagnostic_mrr25": 0.4023351648351648,
+  "completed_epochs": 1,
+  "time_budget_exhausted": false,
+  "final_model_training": "holdout training only (no successful full refit)"
+}

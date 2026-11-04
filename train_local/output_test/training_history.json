@@ -1,0 +1,11 @@
+[
+  {
+    "epoch": 1,
+    "loss": 3.563116502761841,
+    "steps": 5,
+    "seconds": 3.0367845910368487,
+    "partial_epoch": false,
+    "diagnostic_mrr25": 0.4023351648351648,
+    "top1": 0.2
+  }
+]
