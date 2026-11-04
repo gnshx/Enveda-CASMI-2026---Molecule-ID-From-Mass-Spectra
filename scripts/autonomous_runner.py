@@ -163,17 +163,17 @@ def record_journey_and_roadmap(v_name: str, desc: str, score: float):
             roadmap_file.write_text(content, encoding="utf-8")
             log("Appended run result to progress/ROADMAP_AND_PROGRESS.md")
 
-def run_v23_and_monitor():
-    log("=== V23 Pipeline Monitor & Autonomous Submit ===")
-    v_name = "Version 23"
-    v_desc = "Version 23: Pure Rank 1 Shield (w_top=0.00, w_mid=0.75) + MIDX Dedup"
-    v_version = 23
+def run_v24_and_monitor():
+    log("=== V24 Pipeline Monitor & Autonomous Submit ===")
+    v_name = "Version 24"
+    v_desc = "Version 24: Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup + Rank 1 Shield (Target LB 0.480+)"
+    v_version = 24
 
     # Step 0: Ensure kernel is pushed
     log(f"Checking current kernel status for {v_name}...")
     status = check_kernel_status()
     if status not in ("RUNNING", "QUEUED"):
-        log(f"Kernel is {status}. Pushing Version 23 to Kaggle...")
+        log(f"Kernel is {status}. Pushing Version 24 to Kaggle...")
         pushed = False
         for push_attempt in range(5):
             code, out = run_cmd("kaggle kernels push -p deploy_kernel_midx", cwd=REPO_ROOT, timeout_sec=60)
@@ -200,4 +200,4 @@ def run_v23_and_monitor():
     log(f"=== {v_name} processing complete with score {score:.4f} ===")
 
 if __name__ == "__main__":
-    run_v23_and_monitor()
+    run_v24_and_monitor()
