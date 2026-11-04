@@ -552,3 +552,10 @@ All use the same 8 datasets:
 - **Description**: Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup (Target LB 0.484+)
 - **Achieved Public Score**: **`0.0000`**
 - **Status**: Submitted (score pending)
+
+### Official Score Verified: Version 25
+- **Timestamp**: 2026-11-04 16:51:39 UTC
+- **Submission Ref**: `57983294`
+- **Description**: Version 25: Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup
+- **Official Public Score**: **`0.4720`**
+- **Status**: Complete & Verified

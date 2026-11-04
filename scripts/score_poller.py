@@ -23,7 +23,8 @@ COMPETITION_SLUG = "enveda-CASMI26-molecule-id-mass-spectra"
 
 TARGET_SUBS = {
     57982390: {"version": "Version 24", "desc": "Version 24: Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup"},
-    57983294: {"version": "Version 25", "desc": "Version 25: Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup"}
+    57983294: {"version": "Version 25", "desc": "Version 25: Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup"},
+    57992067: {"version": "Version 26", "desc": "Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup"}
 }
 
 def log(msg: str):
