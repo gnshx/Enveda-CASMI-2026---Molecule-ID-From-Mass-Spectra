@@ -34,3 +34,7 @@ Thumbs.db
 *.whl
 scratch/
 logs/
+*.npy
+*.npz
+train_local/cache_full/
+datasets/

@@ -571,3 +571,17 @@ All use the same 8 datasets:
   - Physical fragmentation sub-formula consistency checking.
   - End-to-end proprietary Transformer training with 16 hard negatives and 2048-bit Morgan structural fingerprints.
 - **Autonomous Science Daemon**: `scripts/autonomous_science_loop.py` running continuous 3-hour iterative cycles to validate hypotheses locally, enforce non-regression gates, and drive towards Rank #1.
+
+### Official Score Verified: Version 26
+- **Timestamp**: 2026-11-04 21:21:11 UTC
+- **Submission Ref**: `57992109`
+- **Description**: Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup
+- **Official Public Score**: **`0.4700`**
+- **Status**: Complete & Verified
+
+### Official Score Verified: Version 26
+- **Timestamp**: 2026-11-04 21:27:54 UTC
+- **Submission Ref**: `57992067`
+- **Description**: Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup
+- **Official Public Score**: **`0.4700`**
+- **Status**: Complete & Verified
