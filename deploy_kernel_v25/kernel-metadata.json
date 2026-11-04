@@ -23,7 +23,8 @@
     "dmitriigluzdov/casmi26-pubchem-popularity-prior",
     "dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets",
     "sanpier/catalogue-experiment-saner",
-    "metric/rdkit-2026-3-3-wheel"
+    "metric/rdkit-2026-3-3-wheel",
+    "qwertykeypadapple/casmi26-lotus-candidates"
   ],
   "kernel_sources": [],
   "competition_sources": [

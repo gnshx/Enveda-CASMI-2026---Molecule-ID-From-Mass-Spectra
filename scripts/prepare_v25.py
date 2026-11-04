@@ -275,3 +275,4 @@ nb['cells'][13]['source'] = [line + '\n' for line in tri_cell13.splitlines()]
 target_nb = V25_DIR / "casmi26-v4n-engine-fusion-union-lb-0-399.ipynb"
 target_nb.write_text(json.dumps(nb, indent=1))
 print("Version 25 prepared successfully in deploy_kernel_v25/!")
+

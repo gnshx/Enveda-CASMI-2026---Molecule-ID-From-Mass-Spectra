@@ -15,3 +15,4 @@ nb['cells'][0]['source'] = [
 
 nb_path.write_text(json.dumps(nb, indent=1))
 print("Prepared Cell 0 cleanly.")
+
