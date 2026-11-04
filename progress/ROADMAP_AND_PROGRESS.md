@@ -195,3 +195,8 @@ Enveda-CASMI-2026/
 ```
 
 | 2026-11-01 | Version 20 | Savko Gap v4 + Kunal BIO_W=0.03 + PIN_OLD_LEADER + K14 Dedup | **0.477** (Sub #57868544) | Succeeded |
+| 2026-11-02 | Version 21 | Savko v6 Two-Model Neural Ensemble (Saner v1 + Ahmed Berat Ozer Long) + MIDX Dedup | **0.473** (Sub #57904685) | Succeeded |
+| 2026-11-02 | Version 22 | Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + Skeletal Dedup) | **0.479** (Sub #57915796) | Succeeded |
+| 2026-11-03 | Version 23 | Pure Rank 1 Shield (w_top=0.00, w_mid=0.75) + MIDX Dedup | **0.479** (Sub #57938360) | Succeeded |
+| 2026-11-04 | Version 24 | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup + Rank 1 Shield | **0.480** (Sub #57982390) | Succeeded (New PB) |
+| 2026-11-04 | Version 25 | Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup | *Evaluating* (Sub #57983294) | PENDING |
