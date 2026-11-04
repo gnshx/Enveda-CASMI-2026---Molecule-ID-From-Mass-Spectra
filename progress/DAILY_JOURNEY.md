@@ -517,3 +517,10 @@ All use the same 8 datasets:
 - **Description**: Version 24: Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup + Rank 1 Shield (Target LB 0.480+)
 - **Achieved Public Score**: **`0.0000`**
 - **Status**: Complete & Verified
+
+### Run Result: Version 25
+- **Timestamp**: 2026-11-04 12:01:19 UTC
+- **Kernel**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
+- **Description**: Version 25: Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup (Target LB 0.483+)
+- **Achieved Public Score**: **`0.0000`**
+- **Status**: Complete & Verified
