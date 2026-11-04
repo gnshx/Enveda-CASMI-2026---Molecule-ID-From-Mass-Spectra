@@ -67,18 +67,23 @@ def update_records(v_name: str, desc: str, score: float, ref: int):
 - **Status**: Complete & Verified
 """
     if journey_file.exists():
-        with open(journey_file, "a", encoding="utf-8") as f:
-            f.write(entry)
-        log(f"Logged {v_name} ({score:.4f}) to DAILY_JOURNEY.md")
+        content = journey_file.read_text(encoding="utf-8")
+        if f"Submission Ref**: `{ref}`" not in content or "0.0000" in content:
+            with open(journey_file, "a", encoding="utf-8") as f:
+                f.write(entry)
+            log(f"Logged {v_name} ({score:.4f}) to DAILY_JOURNEY.md")
+        else:
+            log(f"Ref {ref} already documented in DAILY_JOURNEY.md, skipping duplicate append.")
 
     roadmap_file = REPO_ROOT / "progress" / "ROADMAP_AND_PROGRESS.md"
     if roadmap_file.exists():
-        row = f"| {now_utc[:10]} | {v_name} (Ref {ref}) | {desc} | **{score:.4f}** | Succeeded |\n"
         content = roadmap_file.read_text(encoding="utf-8")
-        if "| Date | Version |" in content:
-            content += row
-            roadmap_file.write_text(content, encoding="utf-8")
-            log(f"Logged {v_name} ({score:.4f}) to ROADMAP_AND_PROGRESS.md")
+        if f"Ref {ref}" not in content:
+            row = f"| {now_utc[:10]} | {v_name} (Ref {ref}) | {desc} | **{score:.4f}** | Succeeded |\n"
+            if "| Date | Version |" in content:
+                content += row
+                roadmap_file.write_text(content, encoding="utf-8")
+                log(f"Logged {v_name} ({score:.4f}) to ROADMAP_AND_PROGRESS.md")
 
     run_cmd("git add -A", cwd=REPO_ROOT)
     run_cmd(f'git commit -m "docs: record {v_name} official public score {score:.4f} (Ref {ref})"', cwd=REPO_ROOT)

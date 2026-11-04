@@ -199,4 +199,5 @@ Enveda-CASMI-2026/
 | 2026-11-02 | Version 22 | Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + Skeletal Dedup) | **0.479** (Sub #57915796) | Succeeded |
 | 2026-11-03 | Version 23 | Pure Rank 1 Shield (w_top=0.00, w_mid=0.75) + MIDX Dedup | **0.479** (Sub #57938360) | Succeeded |
 | 2026-11-04 | Version 24 | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup + Rank 1 Shield | **0.480** (Sub #57982390) | Succeeded (New PB) |
-| 2026-11-04 | Version 25 | Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup | *Evaluating* (Sub #57983294) | PENDING |
+| 2026-11-04 | Version 25 | Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup | **0.472** (Sub #57983294) | Succeeded (Degraded) |
+| 2026-11-04 | Version 26 | Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + Calibrated Priors | *Evaluating* (Sub #57992109) | PENDING (Target 0.484+) |

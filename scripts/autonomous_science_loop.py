@@ -137,3 +137,4 @@ if __name__ == "__main__":
         except Exception as e:
             log(f"Exception in iteration #{iter_num}: {e}")
         time.sleep(INTERVAL_SECONDS)
+
