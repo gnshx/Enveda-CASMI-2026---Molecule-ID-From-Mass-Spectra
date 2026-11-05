@@ -613,3 +613,10 @@ All use the same 8 datasets:
   4. **Safe LOTUS Knowledge Base Integration**: Augments `np_map` and performs non-destructive backfill for vacant slots (`len < 25` only).
   5. **In-Pool InChIKey14 Deduplication**: Eliminates redundant stereoisomers, reclaiming 2–5 slots for unique candidate skeletons.
 - **Status**: Compiling on Kaggle GPU T4 worker (`task-3142`), autonomous submission queued. Target: **`0.485+`**.
+
+### Run Result: Version 27
+- **Timestamp**: 2026-11-05 11:20:29 UTC
+- **Kernel**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
+- **Description**: Version 27: Sovereign Multi-Neural Consensus (Saner v1 + Scorer v2 + Custom v1) + Locked Rank 1 Shield + LOTUS Backfill (Target LB 0.485+)
+- **Achieved Public Score**: **`0.0000`**
+- **Status**: Submitted (score pending)

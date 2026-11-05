@@ -90,14 +90,10 @@ def run_local_validation(candidate_cfg):
             ordered = g.sort_values('comp_score', ascending=False)
             ranked_keys = ordered['candidate_key'].tolist()
 
-            # Strict MSI Level-1 Promotion
-            if lib_max >= lib_gate and len(ranked_keys) > 1:
-                cand_is_lib = bool(ordered.iloc[1]['lib_max'] >= 0.80)
-                lead_is_lib = bool(ordered.iloc[0]['lib_max'] >= 0.80)
-                if cand_is_lib and not lead_is_lib:
-                    ranked_keys[0], ranked_keys[1] = ranked_keys[1], ranked_keys[0]
-
-            preds[str(mol)] = ranked_keys[:25]
+            # Strict Immutable Rank 1 Shield: Rank 1 is 100% frozen, only ranks 2-25 re-ranked
+            leader = ranked_keys[0]
+            rest = ranked_keys[1:]
+            preds[str(mol)] = ([leader] + rest)[:25]
         results[str(sc)] = mrr_at_25(preds, gt)
 
     mean_mrr = float(np.mean(list(results.values())))
