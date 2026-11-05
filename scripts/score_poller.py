@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Continuous Score Poller for Submissions 57982390 (V24) and 57983294 (V25).
-Polls competition submissions every 30 seconds until both finish scoring,
+scripts/score_poller.py
+Continuous Dynamic Score Poller.
+Polls competition submissions every 30 seconds for new or pending submissions,
 records official scores to DAILY_JOURNEY.md and ROADMAP_AND_PROGRESS.md,
 and commits/pushes to GitHub.
 """
@@ -20,13 +21,6 @@ os.environ.setdefault('http_proxy', 'http://176.111.37.5:39811')
 REPO_ROOT = Path("/home/dlcv/Enveda-CASMI-2026")
 LOG_FILE = REPO_ROOT / "logs" / "score_poller.log"
 COMPETITION_SLUG = "enveda-CASMI26-molecule-id-mass-spectra"
-
-TARGET_SUBS = {
-    57982390: {"version": "Version 24", "desc": "Version 24: Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup"},
-    57983294: {"version": "Version 25", "desc": "Version 25: Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup"},
-    57992067: {"version": "Version 26", "desc": "Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup"},
-    57992109: {"version": "Version 26", "desc": "Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup"}
-}
 
 def log(msg: str):
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -90,42 +84,43 @@ def update_records(v_name: str, desc: str, score: float, ref: int):
     code, out = run_cmd("git push origin main", cwd=REPO_ROOT)
     log(f"Git push result: {out[:150]}")
 
-def poll_scores():
-    log("=== Starting Continuous Score Poller for V24 and V25 ===")
-    completed = set()
+def poll_latest_loop(interval_sec=30):
+    log("=== Continuous Dynamic Score Poller Started ===")
+    seen_completed = {57982390, 57983294, 57992067, 57992109}
     poll_count = 0
-    while len(completed) < len(TARGET_SUBS):
+    while True:
         poll_count += 1
         try:
             api = get_kaggle_api()
             subs = api.competition_submissions(COMPETITION_SLUG)
-            for sub in subs:
-                ref = getattr(sub, 'ref', None)
-                if ref in TARGET_SUBS and ref not in completed:
+            if subs:
+                for sub in subs[:5]:
+                    ref = getattr(sub, 'ref', None)
                     status = str(getattr(sub, 'status', ''))
                     score_str = str(getattr(sub, 'public_score', getattr(sub, 'publicScore', '')))
-                    info = TARGET_SUBS[ref]
-                    log(f"Poll #{poll_count}: {info['version']} (Ref {ref}) Status={status}, Score={score_str}")
-                    if "COMPLETE" in status and score_str.strip():
+                    desc = getattr(sub, 'description', '')
+                    v_name = f"Ref {ref}"
+                    if "Version " in desc:
+                        v_name = desc.split(":")[0]
+
+                    if "COMPLETE" in status and score_str.strip() and ref not in seen_completed:
                         try:
                             score = float(score_str)
-                            log(f"🏆 SUCCESS: {info['version']} Scored {score:.4f}!")
-                            update_records(info['version'], info['desc'], score, ref)
-                            completed.add(ref)
+                            log(f"🏆 SUCCESS: {v_name} (Ref {ref}) Scored {score:.4f}!")
+                            update_records(v_name, desc, score, ref)
+                            seen_completed.add(ref)
                         except (ValueError, TypeError):
                             pass
+                    elif "PENDING" in status:
+                        log(f"Poll #{poll_count}: {v_name} (Ref {ref}) Status=PENDING, Score={score_str}")
                     elif "ERROR" in status or "FAILED" in status:
-                        err = getattr(sub, 'errorDescription', 'Scoring error')
-                        log(f"❌ ERROR: {info['version']} failed: {err}")
-                        completed.add(ref)
+                        if ref not in seen_completed:
+                            err = getattr(sub, 'errorDescription', 'Scoring error')
+                            log(f"❌ ERROR: {v_name} (Ref {ref}) failed: {err}")
+                            seen_completed.add(ref)
         except Exception as e:
             log(f"Exception during poll #{poll_count}: {e}")
-
-        if len(completed) < len(TARGET_SUBS):
-            time.sleep(30)
-
-    log("=== All target submissions resolved. Poller exiting cleanly. ===")
+        time.sleep(interval_sec)
 
 if __name__ == "__main__":
-    poll_scores()
-
+    poll_latest_loop()

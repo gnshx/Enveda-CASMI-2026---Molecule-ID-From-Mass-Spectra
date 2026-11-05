@@ -585,3 +585,10 @@ All use the same 8 datasets:
 - **Description**: Version 26: Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + In-Pool InChIKey14 Dedup
 - **Official Public Score**: **`0.4700`**
 - **Status**: Complete & Verified
+
+### Official Score Verified: Ref 57938360
+- **Timestamp**: 2026-11-05 10:55:01 UTC
+- **Submission Ref**: `57938360`
+- **Description**: 
+- **Official Public Score**: **`0.4790`**
+- **Status**: Complete & Verified

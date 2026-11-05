@@ -1,0 +1,36 @@
+{
+  "id": "nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399",
+  "id_no": 136555841,
+  "title": "CASMI26 | v4n + Engine Fusion + Union [LB 0.399]",
+  "code_file": "casmi26-v4n-engine-fusion-union-lb-0-399.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": false,
+  "keywords": [
+    "gpu",
+    "chemistry"
+  ],
+  "dataset_sources": [
+    "sanpier/casmi-spectrum-model-v1",
+    "bgunshui/casmi26-scorer-v2-model",
+    "nukaladevisaiganesh/casmi26-custom-scorer-v1",
+    "dmitriigluzdov/casmi26-fold-safe-fpnet",
+    "dmitriigluzdov/casmi26-natural-product-knowledge-table",
+    "dmitriigluzdov/casmi26-natural-product-panel-benchmark",
+    "dmitriigluzdov/casmi26-pubchem-popularity-prior",
+    "dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets",
+    "sanpier/catalogue-experiment-saner",
+    "qwertykeypadapple/casmi26-lotus-candidates",
+    "metric/rdkit-2026-3-3-wheel"
+  ],
+  "kernel_sources": [],
+  "competition_sources": [
+    "enveda-CASMI26-molecule-id-mass-spectra"
+  ],
+  "model_sources": [],
+  "docker_image": "gcr.io/kaggle-private-byod/python@sha256:de153e6d303881930c51286216393d56f56b26458d0661350305a1e8144eea01",
+  "machine_shape": "NvidiaTeslaT4"
+}
