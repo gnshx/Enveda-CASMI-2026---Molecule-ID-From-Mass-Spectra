@@ -665,3 +665,10 @@ Through comprehensive forensic analysis of the top public kernels on Kaggle (`ra
 - **Worker Status**: Currently **`KernelWorkerStatus.RUNNING`** on Kaggle Nvidia Tesla T4 GPU.
 - **Autonomous Runner**: `scripts/runner_v28.py` monitoring completion, auto-submission to competition enabled upon completion.
 - **Target Public Score**: **`0.488 - 0.510+`** (Entering Gold Medal Leaderboard Tier).
+
+### Run Record: Version 28
+- **Timestamp**: 2026-11-09 14:59 UTC
+- **Configuration**: Version 28: Apex Sovereign Dual-Tier ExtLib (Gold/Silver) + 0.65/0.35 Scorer-v5 Ensemble + Strict Rank 1 Shield (Target LB 0.490+)
+- **Public LB Score**: **`0.0000`**
+- **Status**: Submitted (scoring in progress)
+- **Artifacts**: Deployed from `deploy_kernel_v28/`
