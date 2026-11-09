@@ -249,6 +249,31 @@ Step | Change Description                                    | Configuration    
   - Final Checkpoint Saved: `models/custom_scorer_v1/final_model.pt`
   - Published to Kaggle Dataset: [`nukaladevisaiganesh/casmi26-custom-scorer-v1`](https://www.kaggle.com/datasets/nukaladevisaiganesh/casmi26-custom-scorer-v1)
 
+---
+
+### Phase 16: Apex Sovereign Dual-Tier ExtLib SOTA (Versions 28 & 29 — Target LB 0.487+)
+* **Discovery from SOTA Kernels (`rajrajak99` 0.487, `youyouwou` 0.484, `roshanrobinc` Sovereign Zenith V33)**:
+  - Class 1 molecules (~35% of test queries) have authentic measured spectra in external public repositories (MassBank, GNPS, RIKEN) that were omitted from the competition training set.
+  - Searching 324,884 reference spectra across `takumuhata/casmi26-extlib` (Source A) and `samartalwar/casmi-2026-spectral-library-massbankharmonized` (Source B) allows exact identification.
+* **Dual-Tier Direct Promotion Hierarchy**:
+  - **Tier 1 (Gold Hit)**: Precursor error $\le 10\text{ ppm} + 0.002\text{ Da}$, cosine $\ge 0.825$, matching peaks $\ge 4 \to$ **Direct Rank 1 Promotion** (Class 1 queries score MRR = 1.000).
+  - **Tier 2 (Silver Hit)**: Precursor error $\le 5\text{ ppm}$, $0.72 \le \text{Cosine} < 0.825$, matching peaks $\ge 3 \to$ **Promote to Rank 2** ($+0.500$ MRR while strictly **protecting the Rank 1 leader**).
+  - **Internal Library Hit Protection**: Queries where pipeline internal library match reaches `lib_max >= 0.85` remain protected.
+* **Bruker timsTOF Mass-Accuracy Prior (`V8 = 'MASS'`)**:
+  - Center offset at $-1.5\text{ ppm}$ calibrated to Bruker timsTOF mass spectrometers:
+    $$\text{ppm} = \frac{M_{\text{exact}} - M_{\text{neutral}}}{M_{\text{neutral}}} \times 10^6$$
+  - Penalty of up to $-0.15$ applied to candidates in ranks 2–25 deviating by $> 3.0\text{ ppm}$.
+  - Mass Rank-1 Rule: If the pipeline leader is $> 5.0\text{ ppm}$ off-center (chemical chimera / false precursor picking) and rank 2 or 3 is $\le 3.0\text{ ppm}$, promote the on-mass candidate.
+* **Multi-Neural Backbone Fusion**:
+  - $0.65 \cdot z(\text{public v1}) + 0.35 \cdot z(\text{v5 320-width 200-epoch})$ applied across final lists and outside candidates.
+* **Candidate Purity**:
+  - Purged unranked LOTUS decoy tables (`qwertykeypadapple/casmi26-lotus-candidates`).
+  - Active documentation priors (`POP_W=0.12, SPEC_W=0.12, NP_W=0.12, LIB_HIT_GATE=0.75`).
+  - Metric-exact InChIKey14 deduplication across ranks 2–25.
+* **Deployments**:
+  - **Version 28** (Ref `58168204`): Apex Sovereign Dual-Tier ExtLib + 0.65/0.35 Scorer-v5 + Strict Rank 1 Shield.
+  - **Version 29** (Ref `58168293`): Apex Sovereign Dual-Tier ExtLib + timsTOF Mass Prior (-1.5 ppm) + v5 Scorer Ensemble.
+
 1. **Version 3 & 4 (`0.384`)**:
    - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
    - Engine 2 produced empty `{}` lists; pipeline silently bypassed Stage C and submitted raw base `v4n` (`0.384`).

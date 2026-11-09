@@ -1,19 +1,18 @@
 # 🧪 Enveda CASMI 2026: Molecule Identification From Mass Spectra
 
 [![Kaggle Competition](https://img.shields.io/badge/Kaggle-Enveda--CASMI--2026-blue)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra)
-[![Target Score](https://img.shields.io/badge/Target%20Score-0.420%2B%20(Top%201)-brightgreen)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/leaderboard)
-[![Current SOTA Base](https://img.shields.io/badge/Public%20SOTA-0.420-brightgreen)](https://www.kaggle.com/code/seyitkaangunes/casmi26-v4n-fusion-popularity-prior-library-gate)
-[![Active Script](https://img.shields.io/badge/Active%20Submission-sota__top1__submission.py-brightgreen)](kaggle_artifacts/sota_top1_submission.py)
+[![Personal Best](https://img.shields.io/badge/Personal%20Best-0.4800%20(Top%20Contender)-gold)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/submissions)
+[![Target Score](https://img.shields.io/badge/Target%20Score-0.487%2B%20(Gold%20Tier)-brightgreen)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/leaderboard)
+[![Active Deployment](https://img.shields.io/badge/Active%20Deployment-Version%2029%20Apex%20ExtLib-brightgreen)](deploy_kernel_v29/casmi26-v4n-engine-fusion-union-lb-0-399.ipynb)
 [![Progress Tracker](https://img.shields.io/badge/Roadmap%20%26%20Progress-progress%2F-blue)](progress/ROADMAP_AND_PROGRESS.md)
 [![Daily Journey Diary](https://img.shields.io/badge/Daily%20Journey-progress%2FDAILY__JOURNEY.md-purple)](progress/DAILY_JOURNEY.md)
-[![Next Experiments Plan](https://img.shields.io/badge/Future%20Plan-0.450%2B-orange)](progress/FUTURE_EXPERIMENTS_PLAN.md)
 
 ---
 
 > 📌 **Key Documentation**:
 > - 📖 Complete Daily Research Journey: [progress/DAILY_JOURNEY.md](progress/DAILY_JOURNEY.md)
 > - Detailed Step-by-Step History & Ablation Study: [progress/ROADMAP_AND_PROGRESS.md](progress/ROADMAP_AND_PROGRESS.md)
-> - Actionable Plan for Next Experiments (0.420 $\to$ 0.450+): [progress/FUTURE_EXPERIMENTS_PLAN.md](progress/FUTURE_EXPERIMENTS_PLAN.md)
+> - Actionable Plan for Next Experiments (0.480 $\to$ 0.500+): [progress/FUTURE_EXPERIMENTS_PLAN.md](progress/FUTURE_EXPERIMENTS_PLAN.md)
 > - 🧪 Mass Spectrometry & Chemistry Foundations: [docs/CHEMISTRY_AND_MASS_SPECTROMETRY_FOUNDATIONS.md](docs/CHEMISTRY_AND_MASS_SPECTROMETRY_FOUNDATIONS.md)
 > - 🧠 ML Architecture (Inverse & Forward Models): [docs/MACHINE_LEARNING_ARCHITECTURE_AND_MODELS.md](docs/MACHINE_LEARNING_ARCHITECTURE_AND_MODELS.md)
 > - 🗄️ Candidate Databases & Popularity Priors: [docs/CANDIDATE_DATABASES_AND_POPULARITY_PRIORS.md](docs/CANDIDATE_DATABASES_AND_POPULARITY_PRIORS.md)
@@ -32,9 +31,13 @@
 | **Phase 5: Public Breakthrough** | Engine Fusion + Union Forward Models (ICEBERG + GLACIER) | **`0.399`** | Evaluated forward MS/MS on union of candidate pools |
 | **Phase 6: Popularity + Library Gate** | Popularity Prior (`mu=0.15`) + Gap Fragment Rescoring | **`0.404`** | PubChem substance/citation prior on isomers + gap coverage |
 | **Phase 7: SOTA 0.409 Master** | Stronger Prior (`POP_MU=0.25`) + Library Gate (`ICE/GL=0`) | **`0.409`** | Optimal isomer separation + shields confident library matches |
-| **Phase 8: PubChem Join SOTA** | **PubChem Join (`PC_JOIN_N=50`) into Main Engine Ranker** | **`0.420`** | Outside answers ranked #1 via 160-feature evaluation |
-| **Phase 9: SOTA Top 1 Master** | **FILL_25 + Forward Calibration + Decoupled Literature Prior + Adduct Surrogates** | **`0.435`** | Zero-fallback backfill, 100% ICE/GL coverage, and sharpened RRF |
-| **Phase 10: Plan B Master** | **E006 + e2rank2 + PubChemLite & CC BY ChEBI DBs + Adduct Surrogates (v16)** | **`0.455` $\to$ `0.470+`** (Top 1) | Engine-2 Rank-2 injection, expanded candidate recall, 100% forward coverage |
+| **Phase 8: PubChem Join SOTA** | PubChem Join (`PC_JOIN_N=50`) into Main Engine Ranker | **`0.420`** | Outside answers ranked #1 via 160-feature evaluation |
+| **Phase 9: Parallax & Fragments** | Physical Bond-Cleavage Rescoring (5-Shield Gate) | **`0.472`** | MetFrag-lite fragment explanation elevates Class 1/2 structures |
+| **Phase 10: Baidalin MIDX Dedup** | In-Pool InChIKey14 Skeletal Deduplication | **`0.479`** | Purges redundant stereoisomers from ranks 2–25; reclaims slots |
+| **Phase 11: Dual-Neural Ensemble**| **Dual-Neural Z-Score Standardization + Rank 1 Shield** | **`0.4800` (PB)** | $0.50 \cdot z(\text{Saner}) + 0.50 \cdot z(\text{v2})$ + $w_{\text{top}}=0.00$ Rank 1 lock |
+| **Phase 12: Forensic Diagnosis** | Root-Cause Autopsy on V25-V27 Regressions | **`0.472` $\to$ `0.467`** | Identified raw LOTUS decoy noise & $w_{\text{top}}=0.25$ rank flips |
+| **Phase 13: Local GPU Refit** | 25-Epoch Custom Scorer Refit on RTX 3060 CUDA | **`0.6874` val MRR** | Full training on 2.43M spectra; published to Kaggle dataset |
+| **Phase 14: Apex Sovereign ExtLib** | **Dual-Tier Reference Promotion + timsTOF Mass Prior** | **`0.487+` (Target)** | 324k external spectra + Gold/Silver promotion + timsTOF -1.5ppm |
 
 ---
 
