@@ -190,6 +190,23 @@ Step | Change Description                                    | Configuration    
   - Score increased from 0.4720 $\to$ **0.4790** (Version 22, Sub #57915796).
   - Preserved at **0.4790** with pure Rank 1 Shield ($w_{\text{top}}=0.00, w_{\text{mid}}=0.75$, Version 23, Sub #5738360).
 
+---
+
+### Phase 13: Dual-Neural Z-Score Standardization Ensemble (LB 0.4800 PB - Version 24)
+* **Hypothesis**:
+  - Single spectrum-to-structure neural models (`sanpier/casmi-spectrum-model-v1`) have prediction variance depending on collision energies and molecular weight.
+  - Ensembling independently trained neural architectures reduces variance, provided raw outputs are standardized to remove arbitrary scale and shift differences.
+* **Architecture & Mathematical Formulation**:
+  - Model A: `sanpier/casmi-spectrum-model-v1` (Saner Turhaner).
+  - Model B: `bgunshui/casmi26-scorer-v2-model` (longer trained spectrum model).
+  - Per-Molecule Z-Score Standardization:
+    $$z(s)_i = \frac{s_i - \mu_{\text{mol}}}{\sigma_{\text{mol}} + 10^{-6}}$$
+    $$s_{\text{ensemble}} = 0.50 \cdot z(\text{Model A}) + 0.50 \cdot z(\text{Model B})$$
+  - Ranks 2–25 re-ranked by reciprocal rank fusion with documentation priors (`POP_W=0.12, SPEC_W=0.12, NP_W=0.12`).
+  - Immutable Rank 1 Shield ($w_{\text{top}}=0.00$) guaranteeing zero leader demotion.
+* **Result**:
+  - **New All-Time Personal Best: 0.4800 Public Score** (Version 24, Sub #57982390).
+
 1. **Version 3 & 4 (`0.384`)**:
    - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
    - Engine 2 produced empty `{}` lists; pipeline silently bypassed Stage C and submitted raw base `v4n` (`0.384`).
