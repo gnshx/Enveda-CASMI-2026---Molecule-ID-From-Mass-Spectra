@@ -86,7 +86,7 @@ def update_records(v_name: str, desc: str, score: float, ref: int):
 
 def poll_latest_loop(interval_sec=30):
     log("=== Continuous Dynamic Score Poller Started ===")
-    seen_completed = {57982390, 57983294, 57992067, 57992109}
+    seen_completed = {57982390, 57983294, 57992067, 57992109, 58021007}
     poll_count = 0
     while True:
         poll_count += 1
