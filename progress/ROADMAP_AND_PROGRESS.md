@@ -160,7 +160,20 @@ Step | Change Description                                    | Configuration    
 
 ---
 
-## 🔍 Diagnosis: Version 3/4 (0.384) vs Version 6 (0.397) vs Version 7 (0.420)
+### Phase 11: Spectral Parallax & Physical Fragment Check (LB 0.472)
+* **Core Hypothesis**:
+  - While machine learning rankers and neural reciprocal-rank fusion generate strong candidate lists, forward models frequently stumble on constitutional isomers.
+  - A fast physical bond-cleavage enumeration (MetFrag-lite) can verify whether observed MS/MS fragment peaks can physically arise from a candidate's structure via $\le 2$ bond cleavages.
+  - If a runner-up candidate explains substantially more experimental fragment intensity than the baseline leader (margin $\ge 0.095$, votes $\ge 0.75$, with $\ge 3$ peaks), promoting it to Rank 1 corrects false positives.
+* **Architecture (`deploy_kernel_spectral_parallax`)**:
+  - Stage 1: Public 0.465 baseline pipeline execution.
+  - Stage 2: Neural candidate feature extraction.
+  - Stage 3: Physical fragment rescoring module (`frag_rescore.py`).
+  - Strict 5-shield gating:
+    $$\text{len}(\text{spec}) \ge 3, \quad \Delta_{\text{margin}} \ge 0.095, \quad \text{votes} \ge 0.75, \quad \text{min\_peaks} \ge 2$$
+* **Result**:
+  - Jumped from 0.465 $\to$ **0.4720** on public LB (Version 18 / 19).
+  - Validated that physical bond-cleavage explanation is an essential orthogonal signal to neural predictions.
 
 1. **Version 3 & 4 (`0.384`)**:
    - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
