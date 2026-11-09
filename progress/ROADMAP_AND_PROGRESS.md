@@ -207,6 +207,28 @@ Step | Change Description                                    | Configuration    
 * **Result**:
   - **New All-Time Personal Best: 0.4800 Public Score** (Version 24, Sub #57982390).
 
+---
+
+### Phase 14: Forensic Autopsy on Regressions (Versions 25, 26 & 27)
+* **The Downfall Progression**:
+  - V24: **0.4800** (Personal Best)
+  - V25: **0.4720** ($-0.008$)
+  - V26: **0.4700** ($-0.010$)
+  - V27: **0.4670** ($-0.013$)
+* **Root Causes Uncovered**:
+  1. **The LOTUS Noise Displacement Trap**:
+     - V25, V26, and V27 attached `qwertykeypadapple/casmi26-lotus-candidates`.
+     - Code attempted to read `candidates_lotus.parquet` and backfill vacant slots.
+     - Because LOTUS candidates lacked calibrated neural relevance scores, unverified decoy SMILES displaced genuine neural-ranked candidates in ranks 5–25.
+     - Top kernels (`rajrajak99` 0.487, `youyouwou` 0.484, and V24 0.480) strictly avoid raw LOTUS injection.
+  2. **The $w_{\text{top}}$ Contamination Trap**:
+     - In V24: $w_{\text{top}}=0.00$ mathematically locked Rank 1 to the baseline physical fragment leader.
+     - In V27: $w_{\text{top}}=0.25$ allowed neural reciprocal-rank fusion to displace Rank 1 on test molecules, incurring massive $-0.500$ penalties under MRR@25 whenever the neural favourite was incorrect.
+  3. **The Silent Evidence File Disconnect**:
+     - Cell 17 attempted to load `frozen_candidate_evidence.parquet` directly.
+     - Upstream pipeline actually stored candidate features in `neural_candidate_features.parquet`.
+     - As a consequence, `evidence_by_mid` and `LIB_MAX` silently fell back to empty dictionaries, turning off documentation priors and spectral library gating across ranks 2–25.
+
 1. **Version 3 & 4 (`0.384`)**:
    - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
    - Engine 2 produced empty `{}` lists; pipeline silently bypassed Stage C and submitted raw base `v4n` (`0.384`).
