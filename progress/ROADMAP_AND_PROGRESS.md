@@ -175,6 +175,21 @@ Step | Change Description                                    | Configuration    
   - Jumped from 0.465 $\to$ **0.4720** on public LB (Version 18 / 19).
   - Validated that physical bond-cleavage explanation is an essential orthogonal signal to neural predictions.
 
+---
+
+### Phase 12: Baidalin Adilzhan MIDX Exact Deduplication & Leader Shielding (LB 0.479)
+* **Core Discovery**:
+  - In CASMI 2026, evaluation is scored on **Tautomer-Canonical InChIKey14** (`rdMolStandardize.CanonicalTautomer`).
+  - Standard candidate pools often contain 2 to 6 stereoisomers (cis/trans, R/S, diastereomers) sharing the exact same InChIKey14 skeletal hash.
+  - If redundant stereoisomers occupy ranks 2–25, they waste precious candidate slots without increasing recall or MRR.
+* **Mechanism (`deploy_kernel_midx`)**:
+  - **In-Pool InChIKey14 Deduplication**: Iterates through candidate lists, computing skeletal InChIKey14 hashes; keeps only the top-scoring stereoisomer and discards redundant duplicates.
+  - **Reclaimed Slot Backfill**: Vacant slots created by deduplication are backfilled with scored outside candidates from `outsider_neural_features.parquet`.
+  - **Rank 1 Shield**: Rank 1 is protected from speculative leader swaps.
+* **Result**:
+  - Score increased from 0.4720 $\to$ **0.4790** (Version 22, Sub #57915796).
+  - Preserved at **0.4790** with pure Rank 1 Shield ($w_{\text{top}}=0.00, w_{\text{mid}}=0.75$, Version 23, Sub #5738360).
+
 1. **Version 3 & 4 (`0.384`)**:
    - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
    - Engine 2 produced empty `{}` lists; pipeline silently bypassed Stage C and submitted raw base `v4n` (`0.384`).
