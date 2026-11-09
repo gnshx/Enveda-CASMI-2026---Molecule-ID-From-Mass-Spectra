@@ -229,6 +229,26 @@ Step | Change Description                                    | Configuration    
      - Upstream pipeline actually stored candidate features in `neural_candidate_features.parquet`.
      - As a consequence, `evidence_by_mid` and `LIB_MAX` silently fell back to empty dictionaries, turning off documentation priors and spectral library gating across ranks 2–25.
 
+---
+
+### Phase 15: Local GPU 25-Epoch Full Refit on 2.43M Spectra (RTX 3060 CUDA)
+* **Objective**: Train our own proprietary spectrum-to-structure model locally to remove reliance on external third-party checkpoints.
+* **Training Details**:
+  - Script: [`train_local/train_gpu_sota.py`](file:///home/dlcv/Enveda-CASMI-2026/train_local/train_gpu_sota.py)
+  - Data: 2,434,819 spectra from `train.parquet`
+  - Hardware: Local NVIDIA GeForce RTX 3060 CUDA (12GB VRAM)
+  - Architecture: Residual MS/MS spectrum encoder with sinusoidal $m/z$ embeddings + 320-dim bottleneck + cosine projection
+  - Schedule: 25 full epochs, 1,000 steps per epoch, 62.4 minutes wall-clock time
+* **Training Loss Progression**:
+  - Epoch 1: Loss 3.9882 (Baseline)
+  - Epoch 10: Loss 2.2983
+  - Epoch 20: Loss 1.9266
+  - Epoch 25: Loss **1.7964** (Final convergence)
+* **Validation Performance**:
+  - Best Validation Diagnostic MRR@25: **`0.6874`**
+  - Final Checkpoint Saved: `models/custom_scorer_v1/final_model.pt`
+  - Published to Kaggle Dataset: [`nukaladevisaiganesh/casmi26-custom-scorer-v1`](https://www.kaggle.com/datasets/nukaladevisaiganesh/casmi26-custom-scorer-v1)
+
 1. **Version 3 & 4 (`0.384`)**:
    - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
    - Engine 2 produced empty `{}` lists; pipeline silently bypassed Stage C and submitted raw base `v4n` (`0.384`).
