@@ -370,3 +370,4 @@ nb['cells'][17]['source'] = [line + '\n' for line in cell_17_code.splitlines()]
 out_nb_path = V28_DIR / "casmi26-v4n-engine-fusion-union-lb-0-399.ipynb"
 out_nb_path.write_text(json.dumps(nb, indent=1))
 print(f"Version 28 Notebook written successfully to {out_nb_path}")
+

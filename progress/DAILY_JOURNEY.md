@@ -620,3 +620,10 @@ All use the same 8 datasets:
 - **Description**: Version 27: Sovereign Multi-Neural Consensus (Saner v1 + Scorer v2 + Custom v1) + Locked Rank 1 Shield + LOTUS Backfill (Target LB 0.485+)
 - **Achieved Public Score**: **`0.0000`**
 - **Status**: Submitted (score pending)
+
+### Official Score Verified: Version 27
+- **Timestamp**: 2026-11-09 10:33:47 UTC
+- **Submission Ref**: `58021007`
+- **Description**: Version 27: Sovereign Multi-Neural Consensus (Saner v1 + Scorer v2 + Custom v1) + Locked Rank 1 Shield + LOTUS Backfill (Target LB 0.485+)
+- **Official Public Score**: **`0.4670`**
+- **Status**: Complete & Verified
