@@ -38,3 +38,4 @@ logs/
 *.npz
 train_local/cache_full/
 datasets/
+research_kernels/

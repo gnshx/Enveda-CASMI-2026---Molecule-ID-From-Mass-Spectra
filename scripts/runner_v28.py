@@ -2,10 +2,11 @@
 """
 scripts/runner_v28.py
 Autonomous runner for Version 28:
-1. Pushes deploy_kernel_v28 to Kaggle.
-2. Monitors kernel compilation on Kaggle GPU.
-3. Automatically submits output using kernel version 28.
-4. Triggers score polling daemon.
+1. Checks if kernel is already running or complete; pushes deploy_kernel_v28 if needed.
+2. Monitors kernel run until complete on GPU Tesla T4.
+3. Submits kernel output to Kaggle competition.
+4. Updates DAILY_JOURNEY.md and ROADMAP_AND_PROGRESS.md.
+5. Commits and pushes to GitHub.
 """
 
 import os, sys, time, json, subprocess
@@ -25,7 +26,7 @@ KERNEL_SLUG = "nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399"
 COMPETITION = "enveda-CASMI26-molecule-id-mass-spectra"
 VERSION_LABEL = "Version 28"
 VERSION_NUM = 28
-MESSAGE = "Version 28: Active Evidence Pipeline (LIB_MAX + DocPrior Ranks 2-25) + Multi-Neural Consensus + Locked Rank 1 Shield (Target LB 0.490+)"
+MESSAGE = "Version 28: Apex Sovereign Dual-Tier ExtLib (Gold/Silver) + 0.65/0.35 Scorer-v5 Ensemble + Strict Rank 1 Shield (Target LB 0.490+)"
 
 def log(msg):
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
@@ -40,12 +41,15 @@ def run_cmd(cmd, check=True):
         log(f"Command failed ({res.returncode}): {cmd}\nStderr: {res.stderr.strip()}")
     return res
 
-def push_kernel():
+def push_kernel_if_needed():
+    res = run_cmd(f"kaggle kernels status {KERNEL_SLUG}")
+    out = res.stdout.strip()
+    if "RUNNING" in out or "QUEUED" in out:
+        log(f"Kernel '{KERNEL_SLUG}' is already running/queued ({out}). Skipping push.")
+        return True
     log(f"Pushing {VERSION_LABEL} to Kaggle from deploy_kernel_v28...")
-    res = run_cmd("kaggle kernels push -p deploy_kernel_v28")
-    log(f"Push result: {res.stdout.strip()}")
-    if "Kernel push cache saved" not in res.stdout and "successfully" not in res.stdout.lower() and res.returncode != 0:
-        raise RuntimeError(f"Kernel push failed: {res.stderr}")
+    push_res = run_cmd("kaggle kernels push -p deploy_kernel_v28")
+    log(f"Push result: {push_res.stdout.strip()}")
     return True
 
 def wait_for_kernel(timeout_seconds=5400):
@@ -87,7 +91,7 @@ def submit_competition():
         return False
     return True
 
-def append_journey(score=0.0000, status="Submitted (score pending)"):
+def append_journey(score=0.0000, status="Submitted (scoring in progress)"):
     journey_path = ROOT / "progress" / "DAILY_JOURNEY.md"
     ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     entry = f"""
@@ -96,25 +100,25 @@ def append_journey(score=0.0000, status="Submitted (score pending)"):
 - **Configuration**: {MESSAGE}
 - **Public LB Score**: **`{score:.4f}`**
 - **Status**: {status}
-- **Artifacts**: Staged in `deploy_kernel_v28/`
+- **Artifacts**: Deployed from `deploy_kernel_v28/`
 """
     with open(journey_path, "a") as f:
         f.write(entry)
     log(f"Appended run result to {journey_path.relative_to(ROOT)}")
 
-def sync_git(score=0.0000, status="Submitted (score pending)"):
-    msg = f"feat: {VERSION_LABEL} scored {score:.4f} ({status})"
+def sync_git(score=0.0000, status="Submitted (scoring in progress)"):
+    msg = f"feat: {VERSION_LABEL} pushed & submitted ({status})"
     log(f"Syncing git with message: '{msg}'...")
     run_cmd("git add -A")
-    run_cmd(f'git commit -m "{msg}"')
-    res = run_cmd("git push origin main")
+    run_cmd(f'git commit -m "{msg}"', check=False)
+    res = run_cmd("git push origin main", check=False)
     log(f"Git push result: {res.stdout.strip()}")
 
 def main():
-    log(f"=== {VERSION_LABEL} Pipeline Push & Autonomous Submit ===")
+    log(f"=== {VERSION_LABEL} Pipeline Autonomous Runner Started ===")
     
-    # 1. Push Kernel
-    push_kernel()
+    # 1. Push if not already executing
+    push_kernel_if_needed()
     
     # 2. Wait for Kaggle GPU Worker to Complete
     success = wait_for_kernel()
@@ -133,8 +137,7 @@ def main():
     # 4. Update Logs & Git
     append_journey()
     sync_git()
-    log(f"=== {VERSION_LABEL} submission submitted successfully! ===")
+    log(f"=== {VERSION_LABEL} submitted successfully! Score poller will record verified score. ===")
 
 if __name__ == "__main__":
     main()
-

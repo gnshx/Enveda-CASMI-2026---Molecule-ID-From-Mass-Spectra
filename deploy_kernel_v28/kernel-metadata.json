@@ -14,14 +14,15 @@
     "chemistry"
   ],
   "dataset_sources": [
+    "samartalwar/casmi-2026-spectral-library-massbankharmonized",
     "sanpier/casmi-spectrum-model-v1",
-    "bgunshui/casmi26-scorer-v2-model",
-    "nukaladevisaiganesh/casmi26-custom-scorer-v1",
     "dmitriigluzdov/casmi26-fold-safe-fpnet",
     "dmitriigluzdov/casmi26-natural-product-knowledge-table",
     "dmitriigluzdov/casmi26-natural-product-panel-benchmark",
     "dmitriigluzdov/casmi26-pubchem-popularity-prior",
     "dmitriigluzdov/casmi26-attributed-v4g-reproduction-assets",
+    "takumuhata/casmi26-extlib",
+    "bgunshui/casmi26-scorer-v5-model",
     "sanpier/catalogue-experiment-saner",
     "qwertykeypadapple/casmi26-lotus-candidates",
     "metric/rdkit-2026-3-3-wheel"

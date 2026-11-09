@@ -201,3 +201,4 @@ Enveda-CASMI-2026/
 | 2026-11-04 | Version 24 | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup + Rank 1 Shield | **0.480** (Sub #57982390) | Succeeded (New PB) |
 | 2026-11-04 | Version 25 | Tri-Neural Multi-Capacity Backbone + LOTUS 150k KB + MIDX Dedup | **0.472** (Sub #57983294) | Succeeded (Degraded) |
 | 2026-11-04 | Version 26 | Apex Sovereign Balanced Tri-Force (Saner v1 + Scorer v5 320-dim) + Calibrated Priors | **0.470** (Sub #57992109) | Succeeded (Demoted Leaders) |
+| 2026-11-05 | Version 27 | Sovereign Multi-Neural Consensus (Saner v1 + Scorer v2 + Custom v1) + Locked Rank 1 Shield + LOTUS Backfill | **0.467** (Sub #58021007) | Succeeded (Degraded: w_top=0.25 & LOTUS tail noise) |
