@@ -274,6 +274,23 @@ Step | Change Description                                    | Configuration    
   - **Version 28** (Ref `58168204`): Apex Sovereign Dual-Tier ExtLib + 0.65/0.35 Scorer-v5 + Strict Rank 1 Shield.
   - **Version 29** (Ref `58168293`): Apex Sovereign Dual-Tier ExtLib + timsTOF Mass Prior (-1.5 ppm) + v5 Scorer Ensemble.
 
+---
+
+### Phase 17: Autonomous Scientific Loop & Continuous Dynamic Score Poller Infrastructure
+* **Objective**: Create an uninterrupted autonomous research and submission operations loop that executes every 3 hours, verifies local proof on GPU, tracks submissions, and syncs progress to GitHub.
+* **Architecture**:
+  1. **Continuous Dynamic Score Poller Daemon** ([`scripts/score_poller.py`](file:///home/dlcv/Enveda-CASMI-2026/scripts/score_poller.py)):
+     - Runs as a detached persistent background daemon.
+     - Polls Kaggle API every 30 seconds for active submission evaluations.
+     - Automatically parses released public scores, documents the result in [`progress/DAILY_JOURNEY.md`](file:///home/dlcv/Enveda-CASMI-2026/progress/DAILY_JOURNEY.md) and [`progress/ROADMAP_AND_PROGRESS.md`](file:///home/dlcv/Enveda-CASMI-2026/progress/ROADMAP_AND_PROGRESS.md), and commits/pushes to GitHub `origin/main`.
+  2. **Autonomous Scientific Loop Daemon** ([`scripts/autonomous_science_loop.py`](file:///home/dlcv/Enveda-CASMI-2026/scripts/autonomous_science_loop.py)):
+     - Executes every 3 hours.
+     - Monitors local GPU training on CUDA.
+     - Runs offline diagnostic benchmarks on the 250 Natural Products benchmark panel (`scripts/local_benchmark_rerank.py`).
+     - Logs complete telemetry and status to `logs/science_loop.log`.
+  3. **Autonomous End-to-End Runner** ([`scripts/runner_v29.py`](file:///home/dlcv/Enveda-CASMI-2026/scripts/runner_v29.py)):
+     - Handles kernel push, GPU Tesla T4 compilation monitoring, submission to Kaggle competition, and telemetry verification.
+
 1. **Version 3 & 4 (`0.384`)**:
    - **Root Cause**: `eng_runner.py` failed due to hardcoded glob `casmi26-fp-models-v2` not matching `casmi26-fingerprint-models-single-merged`.
    - Engine 2 produced empty `{}` lists; pipeline silently bypassed Stage C and submitted raw base `v4n` (`0.384`).
