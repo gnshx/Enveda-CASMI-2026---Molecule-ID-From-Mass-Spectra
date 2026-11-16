@@ -1,5 +1,5 @@
 {
-  "timestamp_utc": "2026-11-16 20:40:40 UTC",
+  "timestamp_utc": "2026-11-16 20:46:29 UTC",
   "hardware": {
     "device": "NVIDIA GeForce RTX 3060",
     "cuda_available": true,
@@ -177,6 +177,6 @@
     "multimodal_reranker_calibrated": true,
     "popularity_prior_verified": true,
     "gpu_inference_throughput_mol_per_sec": 54.0,
-    "execution_time_seconds": 0.22
+    "execution_time_seconds": 0.21
   }
 }
