@@ -133,14 +133,33 @@ def record_verified_score(v_name: str, desc: str, score: float, ref: int):
     now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
     log(f"🏆 CELEBRATION: Official Score Verified for {v_name} (Ref {ref}): {score:.4f}!")
     
+    # 0. Write atomic score event for swarm notification
+    event_file = LOGS_DIR / "last_score_event.json"
+    event_data = {
+        "timestamp_utc": now_utc,
+        "version": v_name,
+        "ref": ref,
+        "score": score,
+        "description": desc,
+        "status": "COMPLETE"
+    }
+    with open(event_file, "w", encoding="utf-8") as f:
+        json.dump(event_data, f, indent=2)
+
     # 1. Update PROJECT_STATUS.md
     status_file = REPO_ROOT / "PROJECT_STATUS.md"
     if status_file.exists():
         content = status_file.read_text(encoding="utf-8")
-        # Replace PENDING for this ref
-        if str(ref) in content and "PENDING" in content:
+        if str(ref) in content:
+            content = content.replace("**`PENDING`**", f"**`{score:.4f}`**")
             content = content.replace("`PENDING`", f"**`{score:.4f}`**")
+            content = content.replace("`SubmissionStatus.PENDING`", f"`SubmissionStatus.COMPLETE` (**`{score:.4f}`**)")
             content = content.replace("SubmissionStatus.PENDING", f"SubmissionStatus.COMPLETE ({score:.4f})")
+            if score > 0.4800:
+                old_pb_line = "| **Our Verified PB** | **Version 24 (Ref `57982390`)** | **`0.4800`** | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup |"
+                new_pb_line = f"| **Our Verified PB** | **{v_name} (Ref `{ref}`)** | **`{score:.4f}`** | {desc} |"
+                if old_pb_line in content:
+                    content = content.replace(old_pb_line, new_pb_line)
             status_file.write_text(content, encoding="utf-8")
             log("Updated PROJECT_STATUS.md with verified score.")
             
@@ -148,10 +167,15 @@ def record_verified_score(v_name: str, desc: str, score: float, ref: int):
     exp_file = REPO_ROOT / "EXPERIMENT_LOG.md"
     if exp_file.exists():
         content = exp_file.read_text(encoding="utf-8")
-        if str(ref) in content and "Pending" in content:
-            content = content.replace(f"| `{ref}` |", f"| `{ref}` |")
+        if str(ref) in content:
+            content = content.replace("| **Pending** | **PENDING (Active)** |", f"| **`{score:.4f}`** | **COMPLETE** |")
             content = content.replace("**Pending**", f"**`{score:.4f}`**")
             content = content.replace("**PENDING (Active)**", "**COMPLETE**")
+            if score > 0.4800:
+                content = content.replace(
+                    "**Current Personal Best**: `0.4800` (Version 24, Ref `57982390`)",
+                    f"**Current Personal Best**: `{score:.4f}` ({v_name}, Ref `{ref}`)"
+                )
             exp_file.write_text(content, encoding="utf-8")
             log("Updated EXPERIMENT_LOG.md with verified score.")
             
@@ -169,8 +193,22 @@ def record_verified_score(v_name: str, desc: str, score: float, ref: int):
         with open(journey_file, "a", encoding="utf-8") as f:
             f.write(entry)
         log("Appended entry to progress/DAILY_JOURNEY.md.")
+
+    # 4. Update ROADMAP_AND_PROGRESS.md
+    roadmap_file = REPO_ROOT / "progress" / "ROADMAP_AND_PROGRESS.md"
+    if roadmap_file.exists():
+        r_content = roadmap_file.read_text(encoding="utf-8")
+        target_str = f"Version 31** (Ref `{ref}`): Apex Sovereign Frontier (N-1c Molecular Network + ExtLib TAU=0.80 + Learned Logistic Reranker) -> **Target LB 0.488 - 0.492+** [DEPLOYED & SCORING]"
+        if target_str in r_content:
+            new_r_str = f"Version 31** (Ref `{ref}`): Apex Sovereign Frontier -> **Verified Public LB: {score:.4f}** [COMPLETE]"
+            r_content = r_content.replace(target_str, new_r_str)
+        row = f"| {now_utc[:10]} | {v_name} (Ref {ref}) | {desc} | **{score:.4f}** | Succeeded |\n"
+        if f"Ref {ref}" not in r_content:
+            r_content += row
+        roadmap_file.write_text(r_content, encoding="utf-8")
+        log("Updated progress/ROADMAP_AND_PROGRESS.md with verified score.")
         
-    # 4. Git Commit and Push
+    # 5. Git Commit and Push
     run_cmd("git add -A")
     run_cmd(f'git commit -m "docs: record verified public score {score:.4f} for {v_name} (Ref {ref})"')
     code, push_out = run_cmd("git push origin main")
@@ -212,6 +250,11 @@ def check_kaggle_submissions(seen_completed: set, zombie_refs: set):
                 log(f"⚠️ Submission {v_name} (Ref {ref}) reported error: {err_desc}")
                 seen_completed.add(ref)
                 
+        # Calculate daily submission quota (5 per UTC day)
+        today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        subs_today = sum(1 for s in subs if getattr(s, 'date', None) and str(s.date).startswith(today_str))
+        quota_remaining = max(0, 5 - subs_today)
+
         # Write swarm state file
         swarm_state = {
             "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -219,6 +262,9 @@ def check_kaggle_submissions(seen_completed: set, zombie_refs: set):
             "latest_sub_ref": getattr(subs[0], 'ref', None) if subs else None,
             "latest_status": str(getattr(subs[0], 'status', None)) if subs else None,
             "latest_score": str(getattr(subs[0], 'public_score', None)) if subs else None,
+            "submissions_today": subs_today,
+            "quota_remaining": quota_remaining,
+            "quota_total": 5,
             "daemon_alive": True
         }
         with open(SWARM_STATE_FILE, "w", encoding="utf-8") as f:
