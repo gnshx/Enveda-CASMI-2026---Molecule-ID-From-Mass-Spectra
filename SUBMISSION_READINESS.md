@@ -127,3 +127,24 @@ if __name__ == "__main__":
 3. Wait for fast-path commit validation (~3 minutes).
 4. Call `kaggle competitions submit` with description and version ref.
 5. Launch `scripts/score_poller.py` daemon to monitor public leaderboard score.
+
+---
+
+## 4. Pre-Flight Verification Audit Log
+
+### Milestone 2 Unified Pipeline (`submissions/submission_milestone2.csv`)
+- **Verified Timestamp**: `2026-11-16 20:53 UTC`
+- **Verification Tool**: [scripts/verify_submission.py](file:///home/dlcv/Enveda-CASMI-2026/scripts/verify_submission.py)
+- **Check 1 (Format & Size)**: ✅ PASSED (399.28 KB, UTF-8 CSV, compact `molecule_id,smiles`).
+- **Check 2 (Dimensionality)**: ✅ PASSED (400 data rows x 25 candidate slots).
+- **Check 3 (Query ID Match)**: ✅ PASSED (100% exact match to [data/test.parquet](file:///home/dlcv/Enveda-CASMI-2026/data/test.parquet) in identical sorted order).
+- **Check 4 (Chemical Validity)**: ✅ PASSED (10,000 / 10,000 SMILES successfully parsed by RDKit).
+- **Check 5 (InChIKey14 Deduplication)**: ✅ PASSED (0 duplicate InChIKey14 skeletons across all 400 queries; 100% distinct heavy-atom graphs).
+- **Check 6 (Runtime Budget)**: ✅ PASSED (Total offline pipeline runtime: 93.1s / 1.55 minutes, well under the 7.5h limit).
+- **Check 7 (Offline / Checksums)**: ✅ PASSED (Verified offline reproducibility in [experiments/milestone2_verification_report.json](file:///home/dlcv/Enveda-CASMI-2026/experiments/milestone2_verification_report.json)).
+
+### Deployed Notebook Kernel V31 (`deploy_kernel_v31/casmi26-v4n-engine-fusion-union-lb-0-399.ipynb`)
+- **Verified Timestamp**: `2026-11-16 20:44 UTC`
+- **Check 6 (Watchdog Timer)**: ✅ PASSED (`TIME_GUARD_HOURS = 7.5` enforced).
+- **Check 7 (Offline Datasets)**: ✅ PASSED (All models, reference tables, and wheels packaged in `kernel-metadata.json`).
+

@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-11-16T20:52:17Z",
+  "output_file": "submissions/submission_milestone2.csv",
+  "rows": 400,
+  "total_execution_seconds": 93.10750126838684,
+  "runtime_budget_hours_used": 0.02586319479677412,
+  "runtime_budget_limit_hours": 7.5,
+  "stats": {
+    "regime_a_shielded": 305,
+    "regime_b_reranked": 95,
+    "total_candidates_processed": 10000,
+    "dedup_swaps": 0,
+    "fallback_fills": 0
+  },
+  "config": {
+    "w_saner": 0.1,
+    "w_scorer_v2": 0.9,
+    "alpha_mass": 0.5,
+    "alpha_frag": 0.4,
+    "alpha_plaus": 0.3,
+    "timstof_offset_ppm": -1.5
+  }
+}
