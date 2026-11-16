@@ -16,11 +16,12 @@ Before any submission notebook or `submission.csv` is uploaded to Kaggle, it MUS
 
 [  ] Check 2: Row & Column Dimensionality
      - Exactly 400 data rows (excluding 1 header row). Total row count = 401.
-     - Exactly 26 columns: `id`, `smiles_0`, `smiles_1`, ..., `smiles_24`.
+     - Official Format: Exactly 2 columns: `molecule_id,smiles` where `smiles` is a semicolon-separated list of exactly 25 candidate SMILES strings (`smiles_0;smiles_1;...;smiles_24`).
+     - (Or legacy wide format: `molecule_id,smiles_0,...,smiles_24`).
 
 [  ] Check 3: Query ID Integrity
-     - The `id` column matches `test.parquet['id'].unique()` in exact sorted order.
-     - Zero missing, duplicated, or NaN query IDs.
+     - The `molecule_id` column matches `test.parquet['molecule_id'].unique()` in exact sorted order.
+     - Zero missing, duplicated, or NaN molecule IDs.
 
 [  ] Check 4: Chemical Validity (RDKit Compliance)
      - 100% of SMILES strings (400 * 25 = 10,000 entries) parse successfully via `Chem.MolFromSmiles(s)`.
@@ -63,14 +64,15 @@ def verify_submission(csv_path: str, test_parquet_path: str = "data/test.parquet
     
     # 1. Dimensionality check
     assert df.shape[0] == 400, f"Expected 400 rows, got {df.shape[0]}"
-    expected_cols = ["id"] + [f"smiles_{i}" for i in range(25)]
-    assert list(df.columns) == expected_cols, f"Column mismatch! Found: {list(df.columns)[:5]}..."
-    print("✅ Check 1 & 2 Passed: 400 rows, 26 expected columns.")
+    assert "molecule_id" in df.columns or "id" in df.columns, "Missing molecule identifier column!"
+    id_col = "molecule_id" if "molecule_id" in df.columns else "id"
+    print(f"✅ Check 1 & 2 Passed: 400 rows, identifier '{id_col}' present.")
     
     # 2. ID matching
     test_df = pd.read_parquet(test_parquet_path)
-    expected_ids = list(test_df["id"].unique())
-    assert list(df["id"]) == expected_ids, "ID column does not match test.parquet IDs!"
+    test_id_col = "molecule_id" if "molecule_id" in test_df.columns else "id"
+    expected_ids = list(test_df[test_id_col].unique())
+    assert list(df[id_col]) == expected_ids, "ID column does not match test.parquet IDs!"
     print("✅ Check 3 Passed: 100% ID matching and ordering.")
     
     # 3. Chemical Validity & InChIKey14 Dedup
@@ -80,9 +82,15 @@ def verify_submission(csv_path: str, test_parquet_path: str = "data/test.parquet
     total_dupes = 0
     
     for row_idx, row in df.iterrows():
+        if "smiles" in df.columns and len(df.columns) == 2:
+            candidates = str(row["smiles"]).split(";")
+        else:
+            candidates = [str(row[f"smiles_{i}"]) for i in range(25)]
+            
+        assert len(candidates) == 25, f"Row {row_idx} does not have 25 candidates (has {len(candidates)})"
+        
         seen_inchikeys = set()
-        for i in range(25):
-            s = row[f"smiles_{i}"]
+        for s in candidates:
             total_smiles += 1
             mol = Chem.MolFromSmiles(s)
             if mol is None:
