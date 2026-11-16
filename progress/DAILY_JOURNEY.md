@@ -672,3 +672,17 @@ Through comprehensive forensic analysis of the top public kernels on Kaggle (`ra
 - **Public LB Score**: **`0.0000`**
 - **Status**: Submitted (scoring in progress)
 - **Artifacts**: Deployed from `deploy_kernel_v28/`
+
+### Run Record: Version 31 (Apex Sovereign Frontier)
+- **Timestamp**: 2026-11-16 20:04 UTC
+- **Submission Ref**: `58442788`
+- **Configuration**: Version 31: Apex Sovereign Frontier (N-1c In-Test Molecular Network + TAU=0.80 ExtLib + Learned Logistic Reranker) (Target LB 0.488+)
+- **Innovations Deployed**:
+  * In-Test Molecular Network Reranker (`N-1c`): Modified cosine $\ge 0.60$, $k \ge 6$ peak matching, Tanimoto propagation ($\lambda = 0.35$).
+  * Tuned External Reference Library (`Apex ExtLib`): 324,884 spectra at `TAU = 0.80`, `K_PEAKS = 4`, `LIB_TAU = 0.90`.
+  * Learned Logistic Re-Ranker: Trained on Enveda-180 panel (`RERANK_GATE = 1.01`).
+  * Bruker timsTOF mass accuracy prior (`V8 = 'MASS'`) + InChIKey14 deduplication.
+  * Fast single-pass outsider scoring preventing the 9-hour container timeout trap.
+- **Status**: Submitted (scoring in progress)
+- **Target Public LB Score**: **`0.488 - 0.492+`**
+- **Artifacts**: Deployed from `deploy_kernel_v31/`
