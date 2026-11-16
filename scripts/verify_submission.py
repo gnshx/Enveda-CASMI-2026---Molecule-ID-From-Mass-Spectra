@@ -313,23 +313,33 @@ def verify_submission(
 def deduplicate_and_repair_submission(
     input_csv: str,
     output_csv: str,
-    test_parquet_path: str = "data/test.parquet"
+    test_parquet_path: str = "data/test.parquet",
+    fallback_pool_csv: str = "submission_v2.csv"
 ) -> bool:
     """
     Automated repair engine: Deduplicates InChIKey14 slots in input_csv.
-    Reclaims redundant slots and fills them cleanly.
+    Reclaims redundant slots and fills them strictly with distinct InChIKey14 candidates.
+    Never re-adds a skeleton that is already present in seen_keys.
     """
     print(f"\n🔧 Repairing & Deduplicating Submission: {input_csv} -> {output_csv}")
     df = pd.read_csv(input_csv, dtype=str, keep_default_na=False)
     id_col = "molecule_id" if "molecule_id" in df.columns else "id"
 
+    fallback_map: Dict[str, List[str]] = {}
+    if os.path.isfile(fallback_pool_csv):
+        fdf = pd.read_csv(fallback_pool_csv, dtype=str, keep_default_na=False)
+        fid = "molecule_id" if "molecule_id" in fdf.columns else "id"
+        for _, frow in fdf.iterrows():
+            fallback_map[str(frow[fid])] = str(frow["smiles"]).split(";")
+
     repaired_rows = []
     total_reclaimed = 0
 
     for idx, row in df.iterrows():
+        mid = str(row[id_col])
         cands = str(row["smiles"]).split(";")
-        seen_keys = set()
-        deduped = []
+        seen_keys: Set[str] = set()
+        deduped: List[str] = []
 
         for s in cands:
             k14 = smiles_to_k14(s)
@@ -343,14 +353,17 @@ def deduplicate_and_repair_submission(
                 if s not in deduped:
                     deduped.append(s)
 
-        # Backfill if fewer than 25 candidates remain
-        if len(deduped) < 25:
-            for s in cands:
-                if s not in deduped:
+        # Backfill if fewer than 25 candidates remain, STRICTLY enforcing InChIKey14 uniqueness
+        if len(deduped) < 25 and mid in fallback_map:
+            for s in fallback_map[mid]:
+                k14 = smiles_to_k14(s)
+                if k14 is not None and k14 not in seen_keys:
+                    seen_keys.add(k14)
                     deduped.append(s)
                     if len(deduped) == 25:
                         break
 
+        assert len(deduped) == 25, f"Row {idx} ({mid}) could not be filled to 25 unique InChIKey14s (has {len(deduped)})"
         repaired_rows.append(";".join(deduped[:25]))
 
     df["smiles"] = repaired_rows

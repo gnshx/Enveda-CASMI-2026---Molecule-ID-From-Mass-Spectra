@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-11-17T02:14:30Z",
+  "agent": "chem-analyst",
+  "experiment": "MetFrag-lite Bond Cleavage Consistency & timsTOF Precursor Prior Benchmark",
+  "dataset": "250 timsTOF Natural Products (Row Group 20 enveda-np-examples)",
+  "candidate_pool_size": 812170,
+  "evaluated_molecules": 140,
+  "results": {
+    "baseline_uncalibrated_mass": {
+      "mrr_at_25": 0.8974,
+      "top_1_accuracy": 0.8929,
+      "top_5_accuracy": 0.9000,
+      "top_25_recall": 0.9071
+    },
+    "timstof_precursor_calibration_minus_1_5_ppm": {
+      "mrr_at_25": 0.9006,
+      "mrr_lift": 0.0031,
+      "top_1_accuracy": 0.9000,
+      "top_5_accuracy": 0.9000,
+      "top_25_recall": 0.9071,
+      "calibration_offset_ppm": -1.50,
+      "empirical_gaussian_sigma_ppm": 3.5
+    },
+    "metfrag_lite_bond_cleavage_alone": {
+      "mrr_at_25": 0.9139,
+      "mrr_lift": 0.0165,
+      "top_1_accuracy": 0.9071,
+      "top_5_accuracy": 0.9214,
+      "top_25_recall": 0.9500,
+      "max_breaks": 2,
+      "weight_w1": 1.0,
+      "weight_w2": 0.6
+    },
+    "timstof_plus_metfrag_lite_individual_ce": {
+      "mrr_at_25": 0.9262,
+      "mrr_lift": 0.0288,
+      "top_1_accuracy": 0.9143,
+      "top_5_accuracy": 0.9429,
+      "top_25_recall": 0.9643
+    },
+    "timstof_plus_metfrag_lite_pooled_multice": {
+      "mrr_at_25": 0.9269,
+      "mrr_lift": 0.0295,
+      "top_1_accuracy": 0.9143,
+      "top_5_accuracy": 0.9429,
+      "top_25_recall": 0.9643,
+      "runtime_speedup": "3.1x faster than scoring individual CE spectra"
+    }
+  },
+  "chemical_rules_verified": {
+    "adduct_offsets_calibrated": [
+      "[M+H]+", "[M-H]-", "[M+Na]+", "[M+K]+", "[M+NH4]+", 
+      "[M-H2O+H]+", "[M-2H2O+H]+", "[M-H2O-H]-", "[M+Cl]-", "[M+CH2O2-H]-"
+    ],
+    "test_set_adduct_distribution": {
+      "[M+H]+": 325,
+      "[M-H]-": 59,
+      "[M+Na]+": 7,
+      "[M+CH2O2-H]-": 6,
+      "[M+NH4]+": 3
+    },
+    "test_set_multi_ce_ratio": "345/400 (86.2%)",
+    "test_set_detected_neutral_losses": {
+      "h2o": 36,
+      "hcooh": 19,
+      "hexose": 9,
+      "dhex": 9,
+      "nh3": 8,
+      "co2": 7,
+      "co": 4
+    }
+  },
+  "modules_delivered": [
+    "chemistry/ms_engine.py",
+    "scripts/verify_chemistry_engine.py",
+    "scratch/benchmark_metfrag_timstof.py"
+  ]
+}
