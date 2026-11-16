@@ -3,20 +3,28 @@
 [![Kaggle Competition](https://img.shields.io/badge/Kaggle-Enveda--CASMI--2026-blue)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra)
 [![Personal Best](https://img.shields.io/badge/Personal%20Best-0.4800%20(Top%20Contender)-gold)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/submissions)
 [![Target Score](https://img.shields.io/badge/Target%20Score-0.487%2B%20(Gold%20Tier)-brightgreen)](https://www.kaggle.com/competitions/enveda-CASMI26-molecule-id-mass-spectra/leaderboard)
-[![Active Deployment](https://img.shields.io/badge/Active%20Deployment-Version%2029%20Apex%20ExtLib-brightgreen)](deploy_kernel_v29/casmi26-v4n-engine-fusion-union-lb-0-399.ipynb)
-[![Progress Tracker](https://img.shields.io/badge/Roadmap%20%26%20Progress-progress%2F-blue)](progress/ROADMAP_AND_PROGRESS.md)
+[![Active Deployment](https://img.shields.io/badge/Active%20Deployment-Version%2031%20Frontier%20(N--1c%20+%20ExtLib)-brightgreen)](deploy_kernel_v31/casmi26-v4n-engine-fusion-union-lb-0-399.ipynb)
+[![Progress Tracker](https://img.shields.io/badge/Roadmap%20%26%20Progress-RESEARCH__ROADMAP.md-blue)](RESEARCH_ROADMAP.md)
 [![Daily Journey Diary](https://img.shields.io/badge/Daily%20Journey-progress%2FDAILY__JOURNEY.md-purple)](progress/DAILY_JOURNEY.md)
 
 ---
 
-> 📌 **Key Documentation**:
-> - 📖 Complete Daily Research Journey: [progress/DAILY_JOURNEY.md](progress/DAILY_JOURNEY.md)
-> - Detailed Step-by-Step History & Ablation Study: [progress/ROADMAP_AND_PROGRESS.md](progress/ROADMAP_AND_PROGRESS.md)
-> - Actionable Plan for Next Experiments (0.480 $\to$ 0.500+): [progress/FUTURE_EXPERIMENTS_PLAN.md](progress/FUTURE_EXPERIMENTS_PLAN.md)
-> - 🧪 Mass Spectrometry & Chemistry Foundations: [docs/CHEMISTRY_AND_MASS_SPECTROMETRY_FOUNDATIONS.md](docs/CHEMISTRY_AND_MASS_SPECTROMETRY_FOUNDATIONS.md)
-> - 🧠 ML Architecture (Inverse & Forward Models): [docs/MACHINE_LEARNING_ARCHITECTURE_AND_MODELS.md](docs/MACHINE_LEARNING_ARCHITECTURE_AND_MODELS.md)
-> - 🗄️ Candidate Databases & Popularity Priors: [docs/CANDIDATE_DATABASES_AND_POPULARITY_PRIORS.md](docs/CANDIDATE_DATABASES_AND_POPULARITY_PRIORS.md)
-> - 🏆 SOTA Strategy & Leaderboard Breakthroughs: [docs/SOTA_COMPETITION_STRATEGY_AND_LEADERBOARD_BREAKTHROUGHS.md](docs/SOTA_COMPETITION_STRATEGY_AND_LEADERBOARD_BREAKTHROUGHS.md)
+> 🏛️ **Master Autonomous Research Lab Documentation Suite**:
+> | Document | Purpose & Description |
+> |---|---|
+> | 🔬 [COMPETITION_UNDERSTANDING.md](COMPETITION_UNDERSTANDING.md) | Official CASMI 2026 problem definition, MRR@25 math, InChIKey14 rules, 3 Discovery Regimes |
+> | 📋 [PROJECT_AUDIT.md](PROJECT_AUDIT.md) | Inventory of data (2.43M spectra), models, code modules, GPU compute & forensic review |
+> | 🚦 [PROJECT_STATUS.md](PROJECT_STATUS.md) | Real-time leaderboard standings (Top 1: 0.549, PB: 0.4800, active Ref 58442788) & telemetry |
+> | 🗺️ [RESEARCH_ROADMAP.md](RESEARCH_ROADMAP.md) | 4-Milestone Strategic Roadmap to 0.550+ across Regimes A, B, and C |
+> | 🧪 [RESEARCH_FINDINGS.md](RESEARCH_FINDINGS.md) | Literature analysis (MIST, SIRIUS, DreaMS, MetFrag), timsTOF physics, CID energies & adducts |
+> | 📦 [DATA_PROVENANCE.md](DATA_PROVENANCE.md) | Lineage of 325k ExtLib spectra (MassBank, Takumu Hata), DBs (PubChem, COCONUT) & licenses |
+> | ⚖️ [MODEL_COMPARISON.md](MODEL_COMPARISON.md) | Side-by-side benchmark matrix of all inverse, forward & contrastive neural models |
+> | 📜 [EXPERIMENT_LOG.md](EXPERIMENT_LOG.md) | Complete registry of all 31 Kaggle submissions and local validation breakthroughs |
+> | 🔬 [ABLATION_RESULTS.md](ABLATION_RESULTS.md) | Isolated component impact table & cumulative progress waterfall (+0.108 gain) |
+> | 🛑 [FAILURE_ANALYSIS.md](FAILURE_ANALYSIS.md) | Forensic autopsies of past regressions (V25 LOTUS, V26/V27 demotions, V28/V29 timeouts) |
+> | 🧪 [VALIDATION_REPORT.md](VALIDATION_REPORT.md) | Zero-leakage molecule-grouped splits (`structure_split`, `scaffold_split`, `np_split`) |
+> | 🚀 [SUBMISSION_READINESS.md](SUBMISSION_READINESS.md) | Automated 7-point pre-flight verification checklist, Python script & sandbox rules |
+> | 👑 [FINAL_STRATEGY.md](FINAL_STRATEGY.md) | Master synthesis of the 3-regime sovereign architecture & dual-submission protocol |
 
 ---
 
@@ -38,6 +46,7 @@
 | **Phase 12: Forensic Diagnosis** | Root-Cause Autopsy on V25-V27 Regressions | **`0.472` $\to$ `0.467`** | Identified raw LOTUS decoy noise & $w_{\text{top}}=0.25$ rank flips |
 | **Phase 13: Local GPU Refit** | 25-Epoch Custom Scorer Refit on RTX 3060 CUDA | **`0.6874` val MRR** | Full training on 2.43M spectra; published to Kaggle dataset |
 | **Phase 14: Apex Sovereign ExtLib** | **Dual-Tier Reference Promotion + timsTOF Mass Prior** | **`0.487+` (Target)** | 324k external spectra + Gold/Silver promotion + timsTOF -1.5ppm |
+| **Phase 15: Frontier Sovereign (V31)**| **N-1c In-Test Molecular Network + Calibrated ExtLib + Logistic Reranker** | **`0.488 – 0.492+` (Pending)** | In-test analog propagation ($\lambda=0.35$) + ExtLib $\tau=0.80$ + single-pass timeout guard |
 
 ---
 
