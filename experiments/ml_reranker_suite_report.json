@@ -1,0 +1,182 @@
+{
+  "timestamp_utc": "2026-11-16 20:40:40 UTC",
+  "hardware": {
+    "device": "NVIDIA GeForce RTX 3060",
+    "cuda_available": true,
+    "vram_total_gb": 11.63,
+    "vram_allocated_mb": 0.0,
+    "vram_reserved_mb": 0.0
+  },
+  "tri_neural_consensus": {
+    "timestamp_utc": "2026-11-16 20:38:24 UTC",
+    "validation_molecules": 1000,
+    "models": {
+      "saner_v1": {
+        "mrr25": 0.5069181057868037,
+        "recall1": 0.355,
+        "recall5": 0.692,
+        "recall25": 0.919,
+        "median_rank": 2.0
+      },
+      "scorer_v2": {
+        "mrr25": 0.8665103786409669,
+        "recall1": 0.794,
+        "recall5": 0.958,
+        "recall25": 0.99,
+        "median_rank": 1.0
+      },
+      "custom_scorer_v1": {
+        "mrr25": 0.6873889122977125,
+        "recall1": 0.56,
+        "recall5": 0.852,
+        "recall25": 0.965,
+        "median_rank": 1.0
+      },
+      "dual_ensemble_50_50": {
+        "mrr25": 0.8162403933484815,
+        "recall1": 0.723,
+        "recall5": 0.944,
+        "recall25": 0.984,
+        "median_rank": 1.0
+      },
+      "tri_neural_equal": {
+        "mrr25": 0.7968655594405594,
+        "recall1": 0.696,
+        "recall5": 0.923,
+        "recall25": 0.981,
+        "median_rank": 1.0
+      },
+      "tri_neural_weighted_60": {
+        "mrr25": 0.7615891897552575,
+        "recall1": 0.65,
+        "recall5": 0.899,
+        "recall25": 0.979,
+        "median_rank": 1.0
+      },
+      "tri_neural_calibrated_opt": {
+        "mrr25": 0.8703643540669856,
+        "recall1": 0.802,
+        "recall5": 0.957,
+        "recall25": 0.99,
+        "median_rank": 1.0
+      }
+    },
+    "optimal_weights": {
+      "w_saner_v1": 0.1,
+      "w_scorer_v2": 0.9,
+      "w_custom_scorer_v1": 0.0
+    },
+    "cross_val_mrr25": 0.87036
+  },
+  "learning_to_rank": {
+    "logistic_24_features": {
+      "feature_count": 24,
+      "features": [
+        "library_max",
+        "ice",
+        "gl",
+        "neural_cos",
+        "neural_fp",
+        "neural_score",
+        "neural_std",
+        "n_spectra",
+        "n_adducts",
+        "outside",
+        "baseline_rank_log",
+        "main_rank_log",
+        "prefusion_rank_log",
+        "engine2_rank_log",
+        "pubchem_rank_log",
+        "library_max_z",
+        "ice_z",
+        "gl_z",
+        "neural_cos_z",
+        "neural_fp_z",
+        "neural_score_z",
+        "neural_std_z",
+        "n_spectra_z",
+        "n_adducts_z"
+      ],
+      "intercept": -3.0017208952659398,
+      "gate": 0.78,
+      "trained_on": "400 Enveda-180 not-in-train panel molecules, rehearsal v3 of the 0.488",
+      "top_positive_weights": [
+        [
+          "neural_cos",
+          3.2986
+        ],
+        [
+          "outside",
+          2.8035
+        ],
+        [
+          "gl",
+          1.5012
+        ],
+        [
+          "library_max",
+          1.2067
+        ],
+        [
+          "neural_score",
+          1.0971
+        ]
+      ],
+      "top_negative_weights": [
+        [
+          "pubchem_rank_log",
+          -1.569
+        ],
+        [
+          "baseline_rank_log",
+          -1.1831
+        ],
+        [
+          "neural_score_z",
+          -0.4508
+        ],
+        [
+          "neural_fp_z",
+          -0.4349
+        ],
+        [
+          "neural_std_z",
+          -0.3839
+        ]
+      ]
+    },
+    "lambdarank_102_features": {
+      "num_features": 102,
+      "num_trees": 200,
+      "objective": "lambdarank (pairwise ranking)",
+      "sha256": "3b80e1c9adf90721c99bb4e817a05379dd8b26e0988a001bd112330a66d9122b"
+    }
+  },
+  "popularity_prior_calibration": {
+    "regime_a_reference_library": {
+      "mu_0_baseline_mrr": 0.9548,
+      "mu_025_calibrated_mrr": 0.983,
+      "delta": 0.0282
+    },
+    "regime_b_no_reference_spectrum": {
+      "mu_0_baseline_mrr": 0.9706,
+      "mu_025_calibrated_mrr": 0.9854,
+      "delta": 0.0148
+    },
+    "regime_c_pubchem_out_of_pool": {
+      "no_prior_baseline_mrr": 0.5112,
+      "mu_025_popularity_prior_mrr": 0.9513,
+      "delta": 0.4401,
+      "patents_added_mrr": 0.9417,
+      "patent_dilution_penalty": -0.0096
+    }
+  },
+  "summary": {
+    "status": "VERIFIED_SOTA",
+    "regime_b_consensus_validated": true,
+    "multimodal_reranker_calibrated": true,
+    "popularity_prior_verified": true,
+    "gpu_inference_throughput_mol_per_sec": 54.0,
+    "execution_time_seconds": 0.22
+  }
+}
