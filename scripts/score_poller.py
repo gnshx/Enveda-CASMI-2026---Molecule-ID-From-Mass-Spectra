@@ -86,7 +86,8 @@ def update_records(v_name: str, desc: str, score: float, ref: int):
 
 def poll_latest_loop(interval_sec=30):
     log("=== Continuous Dynamic Score Poller Started ===")
-    seen_completed = {57982390, 57983294, 57992067, 57992109, 58021007}
+    seen_completed = {57982390, 57983294, 57992067, 57992109, 58021007, 58168204, 58168293}
+    zombie_refs = {58168204, 58168293}
     poll_count = 0
     while True:
         poll_count += 1
@@ -96,6 +97,8 @@ def poll_latest_loop(interval_sec=30):
             if subs:
                 for sub in subs[:5]:
                     ref = getattr(sub, 'ref', None)
+                    if ref in zombie_refs:
+                        continue
                     status = str(getattr(sub, 'status', ''))
                     score_str = str(getattr(sub, 'public_score', getattr(sub, 'publicScore', '')))
                     desc = getattr(sub, 'description', '')
