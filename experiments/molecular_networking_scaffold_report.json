@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-11-17T07:01:00Z",
+  "agent": "chem-analyst",
+  "experiment": "Phase 29 Molecular Networking Chemical Scaffold Homology Benchmark",
+  "dataset": "250 timsTOF Natural Products (Row Group 20 enveda-np-examples, 31,125 pairs)",
+  "precision_table": {
+    "cos_0.50_k_4": {
+      "pairs": 263,
+      "identical_murcko_scaffold_pct": 7.6,
+      "aglycone_homology_pct": 11.0,
+      "tanimoto_ge_0.70_pct": 4.9,
+      "mean_tanimoto": 0.237
+    },
+    "cos_0.60_k_6": {
+      "pairs": 72,
+      "identical_murcko_scaffold_pct": 15.3,
+      "aglycone_homology_pct": 23.6,
+      "tanimoto_ge_0.70_pct": 11.1,
+      "mean_tanimoto": 0.336
+    },
+    "cos_0.70_k_6": {
+      "pairs": 12,
+      "identical_murcko_scaffold_pct": 41.7,
+      "aglycone_homology_pct": 41.7,
+      "tanimoto_ge_0.70_pct": 25.0,
+      "mean_tanimoto": 0.523
+    },
+    "cos_0.80_k_6": {
+      "pairs": 4,
+      "identical_murcko_scaffold_pct": 50.0,
+      "aglycone_homology_pct": 25.0,
+      "tanimoto_ge_0.70_pct": 25.0,
+      "mean_tanimoto": 0.542
+    }
+  },
+  "chemical_findings": [
+    "At tau = 0.60, k = 6: Only 15.3% of pairs share an identical Murcko scaffold and 23.6% share an aglycone core. 76.4% are distinct scaffolds.",
+    "Unconstrained networking at tau = 0.60 introduces 76-85% false positive graph edges, which demoted true Rank 1 leaders in V31 (0.1400 LB score).",
+    "Tightening tau to >= 0.70 elevates scaffold homology to 41.7% and mean Tanimoto to 0.523.",
+    "Strict Rank-1 Shield (w_top = 0.00) and restricting propagation strictly to ranks 2-25 prevents leader disruption while clustering true aglycone analogs."
+  ]
+}
