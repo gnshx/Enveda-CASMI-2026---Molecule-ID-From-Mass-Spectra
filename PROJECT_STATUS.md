@@ -39,7 +39,7 @@
 
 ## 3. Daily Resource Budget
 
-- **Daily Submission Quota**: **4 of 5 submissions available** (Ref 58451032 used 1; 4 remaining for 2026-11-17 UTC).
+- **Daily Submission Quota**: **3 of 5 submissions available** (Ref 58451032 & Ref 58462901 used; 3 remaining for 2026-11-17 UTC).
 - **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 100% idle, 28 MiB used, 38°C.
 - **System Memory & Disk**: 20.39 GB disk free; all zombie release upgrader processes permanently terminated.
 - **Code Repository**: Synchronized with GitHub `main` at commit `8e55c56`.

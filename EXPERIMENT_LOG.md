@@ -2,7 +2,7 @@
 # Comprehensive Experiment Ledger: From Baseline to SOTA Frontier
 **Project**: Enveda CASMI 2026 — Molecule Identification From Mass Spectra  
 **Current Personal Best**: `0.4800` (Version 24, Ref `57982390`)  
-**Active Frontier**: `Version 31` (Ref `58442788`, Target 0.488 – 0.492+)  
+**Active Frontier**: `Version 34` (Ref `58462901`, Target LB 0.485 – 0.490+)  
 
 ---
 
@@ -27,7 +27,9 @@
 | **V27** | `58021007` | 2026-11-05 | Sovereign Consensus + Locked Rank 1 Shield + LOTUS Backfill | **`0.467`** | COMPLETE | Candidate competition in intermediate ranks reduced MRR on Regime B. |
 | **V28** | `58168204` | 2026-11-09 | Apex Sovereign Dual-Tier ExtLib (Gold/Silver) + timsTOF Prior | — | **ERROR (Timeout)** | Double outsider neural pass exceeded Kaggle 9.0h timeout; killed by system. |
 | **V29** | `58168293` | 2026-11-09 | Apex Sovereign with Calibrated ExtLib + Out-of-Pool Scoring | — | **ERROR (Timeout)** | Second run also killed by 9.0h timeout; queue locked for 7 days. |
-| **V31** | **`58442788`** | 2026-11-16 | **Apex Sovereign Frontier (N-1c Network + ExtLib 0.80 + Logistic Reranker)** | **`0.1400`** | **COMPLETE** | Flushed zombie queue; single-pass outsider scoring; running cleanly. |
+| **V31** | `58442788` | 2026-11-16 | Apex Sovereign Frontier (N-1c Network + ExtLib 0.80 + Logistic Reranker) | **`0.1400`** | COMPLETE | In-test molecular network displaced library leaders; severe regression. |
+| **V32** | `58451032` | 2026-11-17 | Sovereign Immutable Rank-1 Shield (0.00 w_top) + Calibrated Scorer v2 | **`0.4670`** | COMPLETE | Pure Rank-1 Shield restored baseline and eliminated V31 leader displacement. |
+| **V34** | **`58462901`** | 2026-11-17 | **Restored Dual-Neural Consensus (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup** | **`PENDING`** | **PENDING (Active)** | Actively computing on Kaggle GPU. Target LB: 0.485 – 0.490+. |
 
 ---
 
