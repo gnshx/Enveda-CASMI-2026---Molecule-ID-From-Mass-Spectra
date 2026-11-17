@@ -14,7 +14,8 @@
 | **#3** | `Oleksandr Parfionov` | **`0.536`** | Learned candidate reranker + formula filtering |
 | **#4** | `Savko` | **`0.528`** | Top-1 evidence gap closing + external libraries |
 | **Top 20 Cutoff** | `huytngo` | **`0.503`** | Peaks to structures + network reranking |
-| **Our Active Submission** | **Version 34 (Ref `58462901`)** | **`PENDING`** | **Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target: 0.485+)** |
+| **Our Active Submission** | **Version 35 (Ref `58464539`)** | **`PENDING`** | **Frontier Sovereign Constrained Molecular Network ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield (Target: 0.495+)** |
+| **Prior Active Submission** | **Version 34 (Ref `58462901`)** | **`PENDING`** | **Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target: 0.485+)** |
 | **Our Verified PB** | **Version 24 (Ref `57982390`)** | **`0.4800`** | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup |
 | **Our Top 2 Model** | **Version 22 / 23 (Ref `57915796`)** | **`0.4790`** | Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + In-Pool Deduplication) |
 | **Recent Deployment** | **Version 32 (Ref `58451032`)** | **`0.4670`** | Scorer v5 320-dim missed `_swap_to_ours` detection; fell back to single model |
@@ -27,19 +28,19 @@
 - **Submitted At**: `2026-11-17 08:42:18 UTC`
 - **Submission Ref**: `58462901`
 - **Kaggle Status**: `SubmissionStatus.PENDING` (Actively computing scoring pass on hidden test set on Kaggle cloud GPU worker)
-- **Daily Quota Remaining**: **3 of 5 submissions available** for 2026-11-17 UTC.
-- **Active 3-Version Submission Execution**:
-  1. **Version 34 (Ref 58462901)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Restored Dual-Neural Consensus + Sovereign Rank-1 Shield ($w_{\text{top}} = 0.00$) + MIDX Dedup. Target LB: `0.485 – 0.490+`.
-  2. **Version 35 (Kernel v35)**: Actively running commit on Kaggle GPU worker (`KernelWorkerStatus.RUNNING`). Architecture: Phase 29 Constrained In-Test Molecular Networking ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield. Automated runner armed to submit immediately upon completion. Target LB: `0.495 – 0.510+`.
+- **Daily Quota Remaining**: **2 of 5 submissions available** for 2026-11-17 UTC.
+- **Active Submissions in Evaluation**:
+  1. **Version 35 (Ref `58464539`)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Phase 29 Constrained In-Test Molecular Networking ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield. Target LB: `0.495 – 0.510+`.
+  2. **Version 34 (Ref `58462901`)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Restored Dual-Neural Consensus + Sovereign Rank-1 Shield ($w_{\text{top}} = 0.00$) + MIDX Dedup. Target LB: `0.485 – 0.490+`.
   3. **Version 36 (Kernel v36)**: 100% pre-flight certified (7/7 checks passed). Architecture: Milestone 3 SOTA Consensus + Phase 28 Regime C Constitutional Regioisomer Backfill for depleted candidate pools ($< 25$). Staged for immediate Kaggle push upon V35 submission. Target LB: `0.510 – 0.525+`.
-- **Autonomous 24/7 Daemon**: `scripts/auto_submit_v34_v35_v36.py` (task-6833) actively running and polling Kaggle GPU cluster every 30s.
-- **Scheduled Watchdog Timer**: Recurring cron job (`task-6835`) firing every 15 minutes to guarantee uninterrupted 24/7 monitoring and swarm synchronization.
+- **Autonomous 24/7 Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1381977`) and `scripts/auto_submit_v34_v35_v36.py` (PID `1381737`) actively tracking both submissions.
+- **Scheduled Watchdog Timer**: Recurring cron job firing every 5-15 minutes to guarantee uninterrupted 24/7 monitoring and swarm synchronization.
 
 ---
 
 ## 3. Daily Resource Budget
 
-- **Daily Submission Quota**: **3 of 5 submissions available** (Ref 58451032 & Ref 58462901 used; 3 remaining for 2026-11-17 UTC).
+- **Daily Submission Quota**: **2 of 5 submissions available** (Ref 58451032, Ref 58462901, and Ref 58464539 used; 2 remaining for 2026-11-17 UTC).
 - **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 41°C, 12,054 MiB free.
 - **System Memory & Disk**: 20.45 GB disk free.
 - **Code Repository**: Synchronized with GitHub `main`.
