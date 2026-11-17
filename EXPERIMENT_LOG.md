@@ -30,10 +30,29 @@
 | **V31** | `58442788` | 2026-11-16 | Apex Sovereign Frontier (N-1c Network + ExtLib 0.80 + Logistic Reranker) | **`0.1400`** | COMPLETE | In-test molecular network displaced library leaders; severe regression. |
 | **V32** | `58451032` | 2026-11-17 | Sovereign Immutable Rank-1 Shield (0.00 w_top) + Calibrated Scorer v2 | **`0.4670`** | COMPLETE | Pure Rank-1 Shield restored baseline and eliminated V31 leader displacement. |
 | **V34** | **`58462901`** | 2026-11-17 | **Restored Dual-Neural Consensus (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup** | **`PENDING`** | **PENDING (Active)** | Actively computing on Kaggle GPU. Target LB: 0.485 – 0.490+. |
+| **V35** | `Kernel v35` | 2026-11-17 | **Frontier Constrained Molecular Network ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield** | `QUEUED/RUNNING` | **RUNNING (Cloud GPU)** | Automated runner armed to submit upon commit completion. Target LB: 0.495 – 0.510+. |
+| **V36** | `Kernel v36` | 2026-11-17 | **Milestone 3 SOTA Consensus + Regime C Constitutional Regioisomer Backfill** | `STAGED` | **Pre-Flight Certified (7/7)** | Ready for immediate deployment once V35 submits. Target LB: 0.510 – 0.525+. |
 
 ---
 
 ## 2. Key Local Validation Experiments & Breakthroughs
+
+### Experiment EXP-060: Adduct-Stratified High-Resolution Neutral Loss Benchmark
+- **Objective**: Benchmark diagnostic neutral losses across 5,183 natural product MS/MS spectra (`experiments/adduct_stratified_neutral_loss_report.json`).
+- **Findings**:
+  - Formate `[M+CH2O2-H]-`: **52.2%** exhibit $HCOOH$ loss (46.01 Da), regenerating $[M-H]^-$.
+  - Ammonium `[M+NH4]+`: **18.2%** exhibit $NH_3$ loss (17.03 Da), 12x higher than alkali adducts.
+  - Deprotonated `[M-H]-`: **11.2%** exhibit $CO_2$ loss (43.99 Da) via rapid decarboxylation.
+  - Specificity across all losses exceeds **95%**, proving high utility as decoy pruning filters.
+
+### Experiment EXP-061: Multi-Spectrum Collision-Energy Fusion Benchmark (Phase 36)
+- **Objective**: Quantify multi-spectrum coverage and evaluate 5 spectral fusion strategies on local RTX 3060 (`experiments/phase36_spectral_fusion_report.json`).
+- **Dataset Findings**: Across 1,213 test spectra (400 molecules), 86.25% have multi-CE spectra (mean 3.03, up to 9) and 24.25% have dual polarity (+/-). Mean pairwise Jaccard peak overlap across collision energies is only 23.5%, demonstrating that 76.5% of fragment peaks are collision-energy specific.
+- **Empirical Results**:
+  - Strategy 1 (Uniform Mean Baseline): Val MRR@25 = `0.4694`
+  - Strategy 2 (Peak-Count Weighted $w \sim \sqrt{n}$): Val MRR@25 = **`0.4913`** (+0.0219 MRR gain, +4.55% Rank 1 accuracy)
+  - Strategy 3 (Collision-Energy Aware Prior Weighting, 40 eV & Stepped Boost): Val MRR@25 = **`0.4913`** (+0.0219 MRR gain)
+- **Artifact**: `experiments/phase36_spectral_fusion_report.json`, `experiments/multispec_collision_energy_fusion_report.json`.
 
 ### Experiment EXP-042: Local 25-Epoch Custom Scorer Refit
 - **Objective**: Adapt general chemical embeddings to Enveda natural product MS/MS.

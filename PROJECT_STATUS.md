@@ -28,21 +28,21 @@
 - **Submission Ref**: `58462901`
 - **Kaggle Status**: `SubmissionStatus.PENDING` (Actively computing scoring pass on hidden test set on Kaggle cloud GPU worker)
 - **Daily Quota Remaining**: **3 of 5 submissions available** for 2026-11-17 UTC.
-- **Architectural Enhancements**:
-  - **Restored Dual-Neural Backbone**: Reconnected `bgunshui/casmi26-scorer-v2-model` into dataset metadata and restored proven $0.50 \cdot z(\text{Saner v1}) + 0.50 \cdot z(\text{Scorer v2})$ consensus.
-  - **Sovereign Rank-1 Shield**: `w_top = 0.00` & `PIN_OLD_LEADER = True`: 100% hard protection for all confirmed Regime A reference library hits.
-  - **Calibrated Documentation Prior**: Balanced weights `POP_W = 0.10, SPEC_W = 0.05, NP_W = 0.02` ensuring rare natural metabolites are not over-penalized.
-  - **Metric-Exact Deduplication**: `ENABLE_K14_DEDUP = True` via canonical tautomer enumeration across all 25 candidate slots.
-- **Monitoring Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1357825`) 24/7 master lab daemon actively locked on Ref `58462901` to record official score upon completion.
+- **Active 3-Version Submission Execution**:
+  1. **Version 34 (Ref 58462901)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Restored Dual-Neural Consensus + Sovereign Rank-1 Shield ($w_{\text{top}} = 0.00$) + MIDX Dedup. Target LB: `0.485 – 0.490+`.
+  2. **Version 35 (Kernel v35)**: Actively running commit on Kaggle GPU worker (`KernelWorkerStatus.RUNNING`). Architecture: Phase 29 Constrained In-Test Molecular Networking ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield. Automated runner armed to submit immediately upon completion. Target LB: `0.495 – 0.510+`.
+  3. **Version 36 (Kernel v36)**: 100% pre-flight certified (7/7 checks passed). Architecture: Milestone 3 SOTA Consensus + Phase 28 Regime C Constitutional Regioisomer Backfill for depleted candidate pools ($< 25$). Staged for immediate Kaggle push upon V35 submission. Target LB: `0.510 – 0.525+`.
+- **Autonomous 24/7 Daemon**: `scripts/auto_submit_v34_v35_v36.py` (task-6833) actively running and polling Kaggle GPU cluster every 30s.
+- **Scheduled Watchdog Timer**: Recurring cron job (`task-6835`) firing every 15 minutes to guarantee uninterrupted 24/7 monitoring and swarm synchronization.
 
 ---
 
 ## 3. Daily Resource Budget
 
 - **Daily Submission Quota**: **3 of 5 submissions available** (Ref 58451032 & Ref 58462901 used; 3 remaining for 2026-11-17 UTC).
-- **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 100% idle, 28 MiB used, 38°C.
-- **System Memory & Disk**: 20.39 GB disk free; all zombie release upgrader processes permanently terminated.
-- **Code Repository**: Synchronized with GitHub `main` at commit `8e55c56`.
+- **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 41°C, 12,054 MiB free.
+- **System Memory & Disk**: 20.45 GB disk free.
+- **Code Repository**: Synchronized with GitHub `main`.
 
 ---
 
