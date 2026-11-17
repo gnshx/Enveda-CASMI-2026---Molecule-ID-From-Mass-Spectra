@@ -1,0 +1,25 @@
+{
+  "timestamp": "2026-11-17T06:34:30Z",
+  "agent": "chem-analyst",
+  "experiment": "Regime C Constitutional Regioisomer Generation & MetFrag-lite Disambiguation",
+  "dataset": "140 timsTOF Natural Products (Row Group 20 enveda-np-examples)",
+  "metrics": {
+    "total_regioisomers_generated": 910,
+    "elemental_formula_conservation_rate": 1.0,
+    "unique_inchikey14_rate": 1.0,
+    "mean_variants_per_molecule": 6.5,
+    "isomer_mrr_baseline_random": 0.3054,
+    "isomer_mrr_metfrag_lite": 0.5751,
+    "isomer_mrr_lift": 0.2697,
+    "mean_true_isomer_rank": 2.95,
+    "baseline_mean_rank": 4.76,
+    "top_1_accuracy": 0.380,
+    "top_3_accuracy": 0.678,
+    "top_5_accuracy": 0.851
+  },
+  "modules_used": [
+    "regio_generator.py",
+    "chemistry/ms_engine.py",
+    "research_kernels/rajrajak99/output/frag_rescore.py"
+  ]
+}
