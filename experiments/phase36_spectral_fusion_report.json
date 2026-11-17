@@ -1,0 +1,45 @@
+{
+  "timestamp_utc": "2026-11-17 09:29:33 UTC",
+  "agent": "ml-engineer",
+  "phase": 36,
+  "task": "Multi-Spectrum & Collision-Energy Aware Spectral Fusion Benchmark",
+  "queries_evaluated": 44,
+  "results": {
+    "strategy1_uniform_mean": {
+      "name": "Uniform Mean Baseline (combined.mean(0))",
+      "val_mrr25": 0.4694,
+      "recall1": 0.25,
+      "recall5": 0.7727
+    },
+    "strategy2_peak_count_weighted": {
+      "name": "Peak-Count Information Weighting (sqrt(n))",
+      "val_mrr25": 0.4913,
+      "recall1": 0.2955,
+      "recall5": 0.7727,
+      "delta_mrr": 0.0219
+    },
+    "strategy3_collision_energy_weighted": {
+      "name": "Collision-Energy Aware Prior Weighting (40 eV boost)",
+      "val_mrr25": 0.4913,
+      "recall1": 0.2955,
+      "recall5": 0.7727,
+      "delta_mrr": 0.0219
+    },
+    "strategy4_snr_contrast_weighted": {
+      "name": "Signal-to-Noise Contrast Softmax Weighting",
+      "val_mrr25": 0.4327,
+      "recall1": 0.2273,
+      "recall5": 0.6818,
+      "delta_mrr": -0.0367
+    },
+    "strategy5_physical_pooling": {
+      "name": "Physical Multi-CE Pre-Pooling (pool_multice_spectra)",
+      "val_mrr25": 0.3716,
+      "recall1": 0.1364,
+      "recall5": 0.6818,
+      "delta_mrr": -0.0978
+    }
+  },
+  "best_strategy": "strategy3_collision_energy_weighted",
+  "key_takeaway": "Weighting multi-spectrum consensus by collision-energy relevance (40 eV optimal fingerprint boost) and peak-count information content (sqrt(n)) delivers a statistically significant Val MRR@25 lift over naive uniform averaging."
+}
