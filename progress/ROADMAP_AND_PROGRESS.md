@@ -337,3 +337,4 @@ Enveda-CASMI-2026/
 | 2026-11-17 | Version 34 (Ref 58462901) | Version 34: Sovereign Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target LB 0.485+) | **0.4800** | Succeeded |
 | 2026-11-17 | Version 35 (Ref 58464539) | Version 35: Frontier Sovereign Constrained Molecular Network (tau >= 0.70, lambda = 0.20) + Restored Dual-Neural Ensemble + Strict Rank-1 Shield (Target LB 0.495+) | **0.4800** | Succeeded |
 | 2026-11-17 | Ref 58464568 (Ref 58464568) | test message | **0.4800** | Succeeded |
+| 2026-11-17 | Version 36 (Ref 58466926) | Version 36: Apex Sovereign Frontier Milestone 3 Consensus (Regime C Regioisomer Backfill + Dual-Neural + Pure Shield) (Target LB 0.510+) | **0.4800** | Succeeded |

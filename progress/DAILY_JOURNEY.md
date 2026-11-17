@@ -758,3 +758,10 @@ Through comprehensive forensic analysis of the top public kernels on Kaggle (`ra
 - **Description**: test message
 - **Official Public Score**: **`0.4800`**
 - **Status**: Complete & Verified on Public Leaderboard
+
+### Official Score Verified: Version 36
+- **Timestamp**: 2026-11-17 16:56:20 UTC
+- **Submission Ref**: `58466926`
+- **Description**: Version 36: Apex Sovereign Frontier Milestone 3 Consensus (Regime C Regioisomer Backfill + Dual-Neural + Pure Shield) (Target LB 0.510+)
+- **Official Public Score**: **`0.4800`**
+- **Status**: Complete & Verified on Public Leaderboard
