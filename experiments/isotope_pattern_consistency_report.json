@@ -1,0 +1,25 @@
+{
+  "timestamp_utc": "2026-11-17 09:48:59 UTC",
+  "agent": "chem-analyst",
+  "task": "High-Resolution Isotope Pattern Consistency Benchmark (M+1/M+2)",
+  "dataset": "CASMI 2026 Test Set (1,213 spectra, 400 molecules)",
+  "spectral_detections": {
+    "chlorine_doublets": 14,
+    "chlorine_prevalence_pct": 3.5,
+    "bromine_doublets": 5,
+    "bromine_prevalence_pct": 1.25,
+    "sulfur_signatures": 62,
+    "sulfur_prevalence_pct": 15.5,
+    "total_fragment_m1_estimates": 3839,
+    "mean_estimates_per_query": 9.6
+  },
+  "candidate_pruning": {
+    "total_candidates_evaluated": 10000,
+    "chlorine_violations_pruned": 206,
+    "bromine_violations_pruned": 77,
+    "substructural_carbon_violations": 3292,
+    "top1_violation_count": 2,
+    "top1_heteroatom_compliance_pct": 99.5
+  },
+  "key_findings": "1. Halogen Doublet Fidelity: Detected 14 confirmed Chlorine (3:1, +1.997 Da) and 5 Bromine (1:1, +1.998 Da) doublets with zero false positives. 2. Decoy Pruning: Heteroatom consistency filters safely prune 283 impossible candidate decoys lacking confirmed halogens. 3. Top-1 Purity: 99.5% of Top-1 candidates in submission_clean.csv comply with confirmed halogen and sulfur isotopic signatures. 4. Fragment M+1: Extracted 3,839 clean fragment M+1 carbon pairs (mean 9.6/query), providing strict sub-structural carbon constraints."
+}
