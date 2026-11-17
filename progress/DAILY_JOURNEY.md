@@ -730,3 +730,10 @@ Through comprehensive forensic analysis of the top public kernels on Kaggle (`ra
   * **Metric-Exact InChIKey14 Deduplication**: `ENABLE_K14_DEDUP = True` eliminating all stereoisomer redundancy.
 - **Status**: Actively running on hidden test set via Kaggle GPU worker.
 - **Target Public Score**: **`0.490 – 0.495+`** (Crossing into Gold Tier).
+
+### Official Score Verified: Version 31
+- **Timestamp**: 2026-11-17 08:43:01 UTC
+- **Submission Ref**: `58442788`
+- **Description**: Version 31: Apex Sovereign Frontier (N-1c In-Test Molecular Network + TAU=0.80 ExtLib + Learned Logistic Reranker) (Target LB 0.488+)
+- **Official Public Score**: **`0.1400`**
+- **Status**: Complete & Verified on Public Leaderboard
