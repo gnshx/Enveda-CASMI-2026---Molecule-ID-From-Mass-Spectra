@@ -14,7 +14,8 @@
 | **#3** | `Oleksandr Parfionov` | **`0.536`** | Learned candidate reranker + formula filtering |
 | **#4** | `Savko` | **`0.528`** | Top-1 evidence gap closing + external libraries |
 | **Top 20 Cutoff** | `huytngo` | **`0.503`** | Peaks to structures + network reranking |
-| **Our Active Submission** | **Version 35 (Ref `58464539`)** | **`PENDING`** | **Frontier Sovereign Constrained Molecular Network ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield (Target: 0.495+)** |
+| **Our Active Submission** | **Version 36 (Ref `58466926`)** | **`PENDING`** | **Milestone 3 SOTA Consensus + Regime C Regioisomer Backfill (Target: 0.510 – 0.525+)** |
+| **Prior Active Submission** | **Version 35 (Ref `58464539`)** | **`PENDING`** | **Frontier Sovereign Constrained Molecular Network ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield (Target: 0.495+)** |
 | **Prior Active Submission** | **Version 34 (Ref `58462901`)** | **`PENDING`** | **Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target: 0.485+)** |
 | **Our Verified PB** | **Version 24 (Ref `57982390`)** | **`0.4800`** | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup |
 | **Our Top 2 Model** | **Version 22 / 23 (Ref `57915796`)** | **`0.4790`** | Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + In-Pool Deduplication) |
@@ -28,19 +29,19 @@
 - **Submitted At**: `2026-11-17 08:42:18 UTC`
 - **Submission Ref**: `58462901`
 - **Kaggle Status**: `SubmissionStatus.PENDING` (Actively computing scoring pass on hidden test set on Kaggle cloud GPU worker)
-- **Daily Quota Remaining**: **2 of 5 submissions available** for 2026-11-17 UTC.
-- **Active Submissions in Evaluation**:
-  1. **Version 35 (Ref `58464539`)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Phase 29 Constrained In-Test Molecular Networking ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield. Target LB: `0.495 – 0.510+`.
-  2. **Version 34 (Ref `58462901`)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Restored Dual-Neural Consensus + Sovereign Rank-1 Shield ($w_{\text{top}} = 0.00$) + MIDX Dedup. Target LB: `0.485 – 0.490+`.
-  3. **Version 36 (Kernel v36)**: 100% pre-flight certified (7/7 checks passed). Architecture: Milestone 3 SOTA Consensus + Phase 28 Regime C Constitutional Regioisomer Backfill for depleted candidate pools ($< 25$). Staged for immediate Kaggle push upon V35 submission. Target LB: `0.510 – 0.525+`.
-- **Autonomous 24/7 Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1381977`) and `scripts/auto_submit_v34_v35_v36.py` (PID `1381737`) actively tracking both submissions.
-- **Scheduled Watchdog Timer**: Recurring cron job firing every 5-15 minutes to guarantee uninterrupted 24/7 monitoring and swarm synchronization.
+- **Daily Quota Remaining**: **0 of 5 submissions available** (100% daily budget executed: 5/5 submissions deployed for 2026-11-17 UTC).
+- **Active Submissions in Concurrent Evaluation**:
+  1. **Version 36 (Ref `58466926`)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Milestone 3 SOTA Consensus + Phase 28 Regime C Constitutional Regioisomer Backfill for depleted candidate pools ($< 25$). Target LB: `0.510 – 0.525+`.
+  2. **Version 35 (Ref `58464539`)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Phase 29 Constrained In-Test Molecular Networking ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield. Target LB: `0.495 – 0.510+`.
+  3. **Version 34 (Ref `58462901`)**: Actively evaluating on Kaggle hidden-test GPU cluster (`SubmissionStatus.PENDING`). Architecture: Restored Dual-Neural Consensus + Sovereign Rank-1 Shield ($w_{\text{top}} = 0.00$) + MIDX Dedup. Target LB: `0.485 – 0.490+`.
+- **Autonomous 24/7 Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1381977`) and `scripts/auto_submit_v34_v35_v36.py` (PID `1381737`) actively tracking all 3 submissions concurrently.
+- **Scheduled Watchdog Timer**: Recurring cron job firing every 5-15 minutes to guarantee uninterrupted 24/7 monitoring and score capture.
 
 ---
 
 ## 3. Daily Resource Budget
 
-- **Daily Submission Quota**: **1 of 5 submissions available** (4 used: Ref 58451032, 58462901, 58464539, 58464568; 1 remaining strictly reserved for Version 36).
+- **Daily Submission Quota**: **0 of 5 submissions available** (5 used today: Ref 58451032, 58462901, 58464539, 58464568, 58466926; 100% daily budget deployed).
 - **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 41°C, 12,054 MiB free.
 - **System Memory & Disk**: 20.45 GB disk free.
 - **Code Repository**: Synchronized with GitHub `main`.
