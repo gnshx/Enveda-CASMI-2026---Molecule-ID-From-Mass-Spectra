@@ -1,0 +1,48 @@
+{
+  "timestamp_utc": "2026-11-17 01:15:08 UTC",
+  "agent": "ml-engineer",
+  "task": "Phase 28 Regime C Constitutional Isomer Expansion Val MRR Impact",
+  "queries_evaluated": 43,
+  "recovered_true_isomers": 43,
+  "recovery_rate_pct": 100.0,
+  "results": {
+    "strategy1_truncated": {
+      "val_mrr25": 0.0,
+      "recall1": 0.0,
+      "recall5": 0.0,
+      "recall25": 0.0
+    },
+    "strategy2a_generic_decoys": {
+      "val_mrr25": 0.0,
+      "recall1": 0.0,
+      "recall5": 0.0,
+      "recall25": 0.0,
+      "delta_mrr_vs_s1": 0.0
+    },
+    "strategy2b_unscored_regioisomers": {
+      "val_mrr25": 0.1196,
+      "recall1": 0.0,
+      "recall5": 0.1163,
+      "recall25": 1.0,
+      "delta_mrr_vs_s1": 0.1196
+    },
+    "strategy3_regio_metfrag_backfill": {
+      "val_mrr25": 0.1564,
+      "recall1": 0.0,
+      "recall5": 0.1163,
+      "recall25": 1.0,
+      "delta_mrr_vs_s1": 0.1564,
+      "delta_mrr_vs_unscored": 0.0368,
+      "delta_recall25": 1.0
+    },
+    "strategy4_full_metfrag_rerank": {
+      "val_mrr25": 0.3159,
+      "recall1": 0.093,
+      "recall5": 0.5814,
+      "recall25": 1.0,
+      "delta_mrr_vs_s1": 0.3159,
+      "delta_mrr_vs_s3": 0.1596
+    }
+  },
+  "conclusion": "Regime C de novo regioisomer generation expands depleted candidate pools from 0.00% to 100% Recall@25. Coupling with MetFrag-lite physical scoring delivers strong Val MRR gains over unscored baseline backfill."
+}

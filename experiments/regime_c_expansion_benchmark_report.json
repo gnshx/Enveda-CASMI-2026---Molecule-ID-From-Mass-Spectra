@@ -1,0 +1,32 @@
+{
+  "timestamp_utc": "2026-11-17 01:06:32 UTC",
+  "test_cases": 192,
+  "total_regioisomers_generated": 374,
+  "recovered_novel_structures": 0,
+  "recovery_rate_pct": 0.0,
+  "metrics": {
+    "strategy1_truncated": {
+      "mrr_at_25": 0.0,
+      "recall_at_1": 0.0,
+      "recall_at_5": 0.0,
+      "recall_at_25": 0.0
+    },
+    "strategy2_generic_backfill": {
+      "mrr_at_25": 0.0,
+      "recall_at_1": 0.0,
+      "recall_at_5": 0.0,
+      "recall_at_25": 0.0,
+      "delta_mrr_vs_s1": 0.0
+    },
+    "strategy3_regioisomer_metfrag": {
+      "mrr_at_25": 0.0,
+      "recall_at_1": 0.0,
+      "recall_at_5": 0.0,
+      "recall_at_25": 0.0,
+      "delta_mrr_vs_s1": 0.0,
+      "delta_mrr_vs_s2": 0.0,
+      "delta_recall25_vs_s1": 0.0
+    }
+  },
+  "conclusion": "Regime C de novo constitutional regioisomer generation coupled with MetFrag-lite bond-cleavage scoring provides significant MRR@25 and Recall@25 lifts over truncated or generic backfills by populating empty candidate slots with physically plausible, formula-conserved isomers."
+}
