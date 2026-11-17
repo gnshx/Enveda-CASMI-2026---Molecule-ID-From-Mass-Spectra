@@ -14,25 +14,26 @@
 | **#3** | `Oleksandr Parfionov` | **`0.536`** | Learned candidate reranker + formula filtering |
 | **#4** | `Savko` | **`0.528`** | Top-1 evidence gap closing + external libraries |
 | **Top 20 Cutoff** | `huytngo` | **`0.503`** | Peaks to structures + network reranking |
-| **Our Active Deployment** | **Version 34 (Kernel v34)** | **`Commit Running (~12m)`** | **Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target: 0.485+)** |
+| **Our Active Submission** | **Version 34 (Ref `58462901`)** | **`PENDING`** | **Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target: 0.485+)** |
 | **Our Verified PB** | **Version 24 (Ref `57982390`)** | **`0.4800`** | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup |
 | **Our Top 2 Model** | **Version 22 / 23 (Ref `57915796`)** | **`0.4790`** | Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + In-Pool Deduplication) |
 | **Recent Deployment** | **Version 32 (Ref `58451032`)** | **`0.4670`** | Scorer v5 320-dim missed `_swap_to_ours` detection; fell back to single model |
 
 ---
 
-## 2. Active Run Telemetry: Version 34 (Kernel Version 34)
+## 2. Active Run Telemetry: Version 34 (Submission Ref `58462901`)
 
-- **Kernel Slug**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
-- **Pushed At**: `2026-11-17 08:16:26 UTC`
-- **Kaggle Status**: `KernelWorkerStatus.RUNNING` (Commit validation actively executing on Kaggle cloud worker, ~12.3m elapsed)
-- **Monitoring Runner**: `scripts/deploy_and_submit_v34.py` (PID `1357227`) actively polling every 15s to trigger competition submission upon commit completion.
+- **Kernel Slug**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399` (Kernel Version 34)
+- **Submitted At**: `2026-11-17 08:42:18 UTC`
+- **Submission Ref**: `58462901`
+- **Kaggle Status**: `SubmissionStatus.PENDING` (Actively computing scoring pass on hidden test set on Kaggle cloud GPU worker)
+- **Daily Quota Remaining**: **3 of 5 submissions available** for 2026-11-17 UTC.
 - **Architectural Enhancements**:
   - **Restored Dual-Neural Backbone**: Reconnected `bgunshui/casmi26-scorer-v2-model` into dataset metadata and restored proven $0.50 \cdot z(\text{Saner v1}) + 0.50 \cdot z(\text{Scorer v2})$ consensus.
   - **Sovereign Rank-1 Shield**: `w_top = 0.00` & `PIN_OLD_LEADER = True`: 100% hard protection for all confirmed Regime A reference library hits.
   - **Calibrated Documentation Prior**: Balanced weights `POP_W = 0.10, SPEC_W = 0.05, NP_W = 0.02` ensuring rare natural metabolites are not over-penalized.
   - **Metric-Exact Deduplication**: `ENABLE_K14_DEDUP = True` via canonical tautomer enumeration across all 25 candidate slots.
-- **Monitoring Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1357472`) 24/7 master lab daemon actively polling every 45s with hardware & system telemetry.
+- **Monitoring Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1357825`) 24/7 master lab daemon actively locked on Ref `58462901` to record official score upon completion.
 
 ---
 
