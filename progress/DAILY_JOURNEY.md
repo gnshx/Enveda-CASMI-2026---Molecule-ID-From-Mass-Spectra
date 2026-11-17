@@ -686,3 +686,10 @@ Through comprehensive forensic analysis of the top public kernels on Kaggle (`ra
 - **Status**: Submitted (scoring in progress)
 - **Target Public LB Score**: **`0.488 - 0.492+`**
 - **Artifacts**: Deployed from `deploy_kernel_v31/`
+
+### Official Score Verified: Version 31
+- **Timestamp**: 2026-11-17 00:51:17 UTC
+- **Submission Ref**: `58442788`
+- **Description**: Version 31: Apex Sovereign Frontier (N-1c In-Test Molecular Network + TAU=0.80 ExtLib + Learned Logistic Reranker) (Target LB 0.488+)
+- **Official Public Score**: **`0.1400`**
+- **Status**: Complete & Verified on Public Leaderboard

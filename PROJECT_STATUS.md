@@ -14,7 +14,7 @@
 | **#3** | `Oleksandr Parfionov` | **`0.536`** | Learned candidate reranker + formula filtering |
 | **#4** | `Savko` | **`0.528`** | Top-1 evidence gap closing + external libraries |
 | **Top 20 Cutoff** | `huytngo` | **`0.503`** | Peaks to structures + network reranking |
-| **Our Active Submission** | **Version 31 (Ref `58442788`)** | **`PENDING`** | **N-1c Molecular Network + ExtLib $\tau=0.80$ + Logistic Reranker (Target: 0.488 – 0.492+)** |
+| **Our Active Submission** | **Version 31 (Ref `58442788`)** | **`0.1400`** | **N-1c Molecular Network + ExtLib $\tau=0.80$ + Logistic Reranker (Target: 0.488 – 0.492+)** |
 | **Our Verified PB** | **Version 24 (Ref `57982390`)** | **`0.4800`** | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup |
 
 ---
@@ -23,7 +23,7 @@
 
 - **Submission Reference**: `58442788`
 - **Submitted At**: `2026-11-16 20:04:11 UTC`
-- **Kaggle Status**: `SubmissionStatus.PENDING` (Worker active on hidden test evaluation)
+- **Kaggle Status**: `SubmissionStatus.COMPLETE` (**`0.1400`**) (Worker active on hidden test evaluation)
 - **Container Execution Guard**: Enforced `TIME_GUARD_HOURS = 7.5` and single-pass outsider scoring. Expected completion runtime: ~6.0 – 6.5 hours.
 - **Monitoring Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1338448`) 24/7 master lab daemon actively polling every 45 seconds with hardware & system telemetry.
 
