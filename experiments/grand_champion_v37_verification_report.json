@@ -1,0 +1,48 @@
+{
+  "timestamp": "2026-11-17T13:27:41Z",
+  "output_file": "submissions/submission_grand_champion_v37.csv",
+  "rows": 400,
+  "total_execution_seconds": 213.65338706970215,
+  "runtime_budget_hours_used": 0.05934816307491726,
+  "runtime_budget_limit_hours": 7.5,
+  "stats": {
+    "regime_a_shielded": 305,
+    "regime_b_reranked": 95,
+    "total_candidates_scored": 10000,
+    "dedup_swaps": 0,
+    "fallback_fills": 0,
+    "regio_fills": 0,
+    "halogen_disqualifications": 220,
+    "carbon_overhang_penalties": 1581
+  },
+  "network_diagnostics": {
+    "elapsed_seconds": 101.69,
+    "total_test_molecules": 400,
+    "total_pairs_evaluated": 52618,
+    "total_edges_formed": 32,
+    "queries_with_edges": 34,
+    "tau_threshold": 0.7,
+    "min_peaks": 6,
+    "mean_edge_cosine": 0.7676,
+    "max_edge_cosine": 0.9855
+  },
+  "network_reranker_stats": {
+    "total_queries": 400,
+    "shielded_queries": 305,
+    "shielded_rank1_moved": 0,
+    "subranks_reordered": 34,
+    "queries_with_network_edges": 34,
+    "dedup_failures": 0
+  },
+  "config": {
+    "w_neural": 1.6343,
+    "w_frag": 1.6024,
+    "w_iso": 0.75,
+    "w_mass": 0.5,
+    "w_plaus": 0.3,
+    "network_tau": 0.7,
+    "network_min_peaks": 6,
+    "network_lambda": 0.2,
+    "timstof_offset_ppm": -1.5
+  }
+}
