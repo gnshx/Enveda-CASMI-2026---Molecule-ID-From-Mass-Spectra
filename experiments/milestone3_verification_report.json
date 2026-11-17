@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-11-17T01:40:59Z",
+  "output_file": "submissions/submission_milestone3.csv",
+  "rows": 400,
+  "total_execution_seconds": 197.00782990455627,
+  "runtime_budget_hours_used": 0.054724397195710074,
+  "runtime_budget_limit_hours": 7.5,
+  "stats": {
+    "regime_a_shielded": 305,
+    "regime_b_reranked": 95,
+    "total_candidates_scored": 10000,
+    "dedup_swaps": 0,
+    "fallback_fills": 0,
+    "regio_fills": 0
+  },
+  "network_diagnostics": {
+    "elapsed_seconds": 98.74,
+    "total_test_molecules": 400,
+    "total_pairs_evaluated": 52618,
+    "total_edges_formed": 27,
+    "queries_with_edges": 31,
+    "tau_threshold": 0.7,
+    "min_peaks": 6,
+    "mean_edge_cosine": 0.7605,
+    "max_edge_cosine": 0.9819
+  },
+  "network_reranker_stats": {
+    "total_queries": 400,
+    "shielded_queries": 305,
+    "shielded_rank1_moved": 0,
+    "subranks_reordered": 31,
+    "queries_with_network_edges": 31,
+    "dedup_failures": 0
+  },
+  "config": {
+    "w_saner": 0.1,
+    "w_scorer_v2": 0.9,
+    "alpha_mass": 0.5,
+    "alpha_frag": 0.4,
+    "alpha_plaus": 0.3,
+    "network_tau": 0.7,
+    "network_min_peaks": 6,
+    "network_lambda": 0.25,
+    "timstof_offset_ppm": -1.5
+  }
+}
