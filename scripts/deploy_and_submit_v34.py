@@ -35,8 +35,8 @@ COMPETITION = "enveda-CASMI26-molecule-id-mass-spectra"
 LOG_FILE = ROOT / "logs" / "runner_v34.log"
 
 VERSION_LABEL = (
-    "Version 34: Frontier Sovereign Consensus (Rank-1 Shield + Constrained "
-    "Molecular Network tau>=0.70 + Regime C Regioisomers + MIDX Dedup) (Target LB 0.495+)"
+    "Version 34: Sovereign Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + "
+    "Pure Rank-1 Shield + MIDX Dedup (Target LB 0.485+)"
 )
 
 def log(msg: str):
