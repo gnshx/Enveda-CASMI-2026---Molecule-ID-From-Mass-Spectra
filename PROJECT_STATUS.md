@@ -76,3 +76,33 @@
   - Runtime Budget: Offline execution completed in 93.1 seconds (1.55 minutes, well under the 7.5h limit).
   - Audit Report: [experiments/milestone2_verification_report.json](file:///home/dlcv/Enveda-CASMI-2026/experiments/milestone2_verification_report.json).
 
+---
+
+## 5. Phase 29: In-Test Molecular Networking with Hard Rank-1 Shield
+
+- **Module**: [ranking/network_reranker_guard.py](file:///home/dlcv/Enveda-CASMI-2026/ranking/network_reranker_guard.py) & [chemistry/spectral_network.py](file:///home/dlcv/Enveda-CASMI-2026/chemistry/spectral_network.py)
+- **Scaffold Homology Audit (31,125 pairs across 250 timsTOF NPs)**:
+  - Tightening edge threshold to $\tau \ge 0.70$ increases core scaffold homology from $14.8\%$ ($\tau=0.50$) to **$43.2\%$** (mean Tanimoto: $0.455$), pruning spurious cross-class edges.
+- **Rank-Constrained Neighbor Propagation**:
+  - Confines Tanimoto neighbor propagation ($\lambda \le 0.25$) strictly to candidate ranks 2–25.
+  - Guaranteed Zero Rank-1 Displacements: $w_{\text{top}} = 0.00$ on all shielded reference library hits.
+  - Yields **$+0.0290$ Val MRR lift** over baseline without moving a single Rank-1 leader.
+  - Audit Reports: [experiments/molecular_networking_scaffold_report.json](file:///home/dlcv/Enveda-CASMI-2026/experiments/molecular_networking_scaffold_report.json) and [experiments/phase29_molecular_networking_report.json](file:///home/dlcv/Enveda-CASMI-2026/experiments/phase29_molecular_networking_report.json).
+
+---
+
+## 6. Phase 30: Swarm Milestone 3 Pipeline & 7-Point Certification
+
+- **Milestone 3 Unified Pipeline Module**: [pipelines/milestone3_pipeline.py](file:///home/dlcv/Enveda-CASMI-2026/pipelines/milestone3_pipeline.py)
+  - Unifies: Tri-Neural Backbone + Complete Chemistry Engine + Sovereign Rank-1 Shield + Phase 28 Regime C Regioisomers + Phase 29 In-Test Molecular Networking ($\tau \ge 0.70$).
+  - Fast execution: Entire 400-query pipeline runs in **197.01 seconds (3.28 minutes)**.
+  - Discovers 27 high-confidence spectral network edges (mean cosine $0.761$) across 31 test molecules.
+  - Reorders ranks 2–25 on 31 queries with strictly **zero Rank-1 leader displacements**.
+- **Official 7-Point Pre-Flight Certification**: **100% PASSED**
+  - Submission Target: [submissions/submission_milestone3.csv](file:///home/dlcv/Enveda-CASMI-2026/submissions/submission_milestone3.csv)
+  - Dimensionality: Exactly 400 rows $\times$ 25 candidate slots.
+  - Validity: 10,000 / 10,000 SMILES successfully parsed by RDKit.
+  - Deduplication: All 400 rows have 25 unique canonical tautomer InChIKey14 skeletons.
+  - Audit Report: [experiments/milestone3_verification_report.json](file:///home/dlcv/Enveda-CASMI-2026/experiments/milestone3_verification_report.json).
+
+
