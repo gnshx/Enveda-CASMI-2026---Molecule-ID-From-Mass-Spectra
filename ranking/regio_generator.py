@@ -1,20 +1,54 @@
 """
 ranking/regio_generator.py
 
-Multi-Channel Constitutional Isomer Generator (RDKit).
-From the 0.358+ SOTA pipeline by haideptry.
+Multi-Channel Constitutional Isomer Generator & Admission Guard (RDKit).
+From the 0.358+ SOTA pipeline by haideptry, upgraded for CASMI 2026 Phase 28.
 Generates:
   1. Aromatic 6-ring regioisomers (ortho/meta/para migrations & swaps)
   2. N-Alkyl to Ar-Alkyl shifts (Tertiary N-Me -> Secondary NH + Ar-Me)
   3. Carbonyl / Enol ring unsaturation shifts
-Guarantees exact formula conservation and distinct InChIKey14.
+Guarantees exact formula conservation and strict RDKit canonical tautomer InChIKey14 deduplication.
 """
 
+from __future__ import annotations
+
 import itertools
+from typing import List, Dict, Set, Tuple, Optional
 from rdkit import Chem, RDLogger
 from rdkit.Chem import rdMolDescriptors, AllChem
+from rdkit.Chem.MolStandardize import rdMolStandardize
 
 RDLogger.DisableLog("rdApp.*")
+
+# Thread-safe canonical tautomer enumerator with safety caps
+_tautomer_enumerator = rdMolStandardize.TautomerEnumerator()
+_tautomer_enumerator.SetMaxTautomers(100)
+_tautomer_enumerator.SetMaxTransforms(100)
+
+
+def to_canonical_inchikey14(mol_or_smi: Chem.Mol | str) -> Optional[str]:
+    """
+    Computes competition-exact canonical tautomer InChIKey14.
+    Matches Kaggle evaluation metric and scripts/verify_submission.py Check 5.
+    """
+    if mol_or_smi is None:
+        return None
+    try:
+        if isinstance(mol_or_smi, str):
+            mol = Chem.MolFromSmiles(mol_or_smi)
+            if mol is None:
+                return None
+        else:
+            mol = mol_or_smi
+        try:
+            canon = _tautomer_enumerator.Canonicalize(mol)
+        except Exception:
+            canon = mol
+        ik = Chem.MolToInchiKey(canon)
+        return ik[:14] if ik else None
+    except Exception:
+        return None
+
 
 def get_ordered_ring(mol, ring_indices):
     """Orders ring atoms sequentially along the perimeter."""
@@ -37,27 +71,36 @@ def get_ordered_ring(mol, ring_indices):
             break
     return ordered if len(ordered) == len(ring_indices) else list(ring_indices)
 
-def generate_constitutional_isomers(smi: str, max_variants: int = 25):
+
+def generate_constitutional_isomers(
+    smi: str,
+    max_variants: int = 25,
+    existing_keys: Optional[Set[str]] = None
+) -> List[str]:
     """
     Given a parent SMILES string:
     Generates aromatic regioisomers, N-alkyl to Ar-alkyl shifts, and ring unsaturation / enol shifts.
-    Guarantees exact elemental formula conservation and distinct InChIKey14.
+    Guarantees exact elemental formula conservation and strict canonical tautomer InChIKey14 deduplication.
     """
     mol = Chem.MolFromSmiles(smi)
     if not mol:
         return []
     
-    parent_key = Chem.MolToInchiKey(mol)[:14]
+    parent_key = to_canonical_inchikey14(mol)
     parent_formula = rdMolDescriptors.CalcMolFormula(mol)
     
-    generated = {} # InChIKey14 -> SMILES
+    generated: Dict[str, str] = {} # InChIKey14 -> SMILES
+    blocked_keys = set(existing_keys) if existing_keys else set()
+    if parent_key:
+        blocked_keys.add(parent_key)
 
     def try_add_mol(m):
-        if not m: return
+        if not m:
+            return
         try:
             Chem.SanitizeMol(m)
-            k = Chem.MolToInchiKey(m)[:14]
-            if k != parent_key and k not in generated:
+            k = to_canonical_inchikey14(m)
+            if k and k not in blocked_keys and k not in generated:
                 if rdMolDescriptors.CalcMolFormula(m) == parent_formula:
                     generated[k] = Chem.MolToSmiles(m)
         except Exception:
@@ -140,3 +183,76 @@ def generate_constitutional_isomers(smi: str, max_variants: int = 25):
         pass
 
     return list(generated.values())[:max_variants]
+
+
+def admit_candidates_safely(
+    existing_candidates: List[str],
+    candidate_pool: List[str],
+    target_count: int = 25,
+    required_formula: Optional[str] = None
+) -> Tuple[List[str], Dict[str, int]]:
+    """
+    Admission Gate: Safely admits candidate structures into the target candidate list.
+    Enforces:
+      1. RDKit parse validity
+      2. Exact formula matching (if required_formula is provided)
+      3. Strict InChIKey14 uniqueness via Canonical Tautomer Enumeration
+    
+    Returns (admitted_smiles_list, diagnostic_stats).
+    """
+    admitted: List[str] = []
+    seen_k14: Set[str] = set()
+    stats = {
+        "existing_kept": 0,
+        "existing_dupes_pruned": 0,
+        "pool_admitted": 0,
+        "pool_rejected_tautomer_dupe": 0,
+        "pool_rejected_invalid": 0,
+        "pool_rejected_formula_mismatch": 0,
+    }
+
+    # 1. Process existing candidates first
+    for smi in existing_candidates:
+        if not smi:
+            continue
+        k = to_canonical_inchikey14(smi)
+        if k is None:
+            stats["existing_dupes_pruned"] += 1
+            continue
+        if k in seen_k14:
+            stats["existing_dupes_pruned"] += 1
+            continue
+        seen_k14.add(k)
+        admitted.append(smi)
+        stats["existing_kept"] += 1
+        if len(admitted) >= target_count:
+            break
+
+    # 2. Admit from candidate pool up to target_count
+    if len(admitted) < target_count:
+        for smi in candidate_pool:
+            if not smi:
+                continue
+            mol = Chem.MolFromSmiles(smi)
+            if mol is None:
+                stats["pool_rejected_invalid"] += 1
+                continue
+            if required_formula is not None:
+                if rdMolDescriptors.CalcMolFormula(mol) != required_formula:
+                    stats["pool_rejected_formula_mismatch"] += 1
+                    continue
+            k = to_canonical_inchikey14(mol)
+            if k is None:
+                stats["pool_rejected_invalid"] += 1
+                continue
+            if k in seen_k14:
+                stats["pool_rejected_tautomer_dupe"] += 1
+                continue
+            seen_k14.add(k)
+            admitted.append(smi)
+            stats["pool_admitted"] += 1
+            if len(admitted) >= target_count:
+                break
+
+    return admitted, stats
+
