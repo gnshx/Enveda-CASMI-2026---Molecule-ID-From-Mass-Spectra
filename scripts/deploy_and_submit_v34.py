@@ -84,22 +84,37 @@ def push_kernel():
     log("✓ Kernel push succeeded.")
     return True
 
-def wait_for_commit(api: KaggleApi, max_wait_sec=5400, poll_interval=30):
+def get_current_kernel_version():
+    try:
+        from kaggle.api.kaggle_api_extended import KaggleApi
+        from kagglesdk.kernels.types.kernels_api_service import ApiGetKernelRequest
+        api = KaggleApi()
+        api.authenticate()
+        client = api.build_kaggle_client()
+        req = ApiGetKernelRequest()
+        req.user_name = "nukaladevisaiganesh"
+        req.kernel_slug = "casmi26-v4n-engine-fusion-union-lb-0-399"
+        res = client.kernels.kernels_api_client.get_kernel(req)
+        current_ver = getattr(res.metadata, "current_version_number", getattr(res.metadata, "currentVersionNumber", 34))
+        return int(current_ver)
+    except Exception as e:
+        log(f"Warning determining kernel version: {e}")
+        return 34
+
+def wait_for_commit(max_wait_sec=5400, poll_interval=15):
     log("\n⏳ Waiting for Kaggle cloud worker commit execution to complete...")
     start_time = time.time()
     while time.time() - start_time < max_wait_sec:
-        status_res = api.kernels_status(KERNEL_SLUG)
-        status_str = str(status_res.get("status", "")).lower()
-        elapsed = time.time() - start_time
-        log(f"  * Kernel status: {status_str} (elapsed: {elapsed:.1f}s)")
+        st_res = run_cmd(f"kaggle kernels status {KERNEL_SLUG}")
+        st_out = (st_res.stdout + " " + st_res.stderr).strip()
+        elapsed = (time.time() - start_time) / 60.0
+        log(f"  * Status: {st_out} (elapsed {elapsed:.1f}m)")
 
-        if status_str == "complete":
+        if "KernelWorkerStatus.COMPLETE" in st_out or "COMPLETE" in st_out:
             log("🎉 Kernel commit completed successfully!")
             return True
-        elif status_str in ("error", "cancel_acknowledged"):
-            log(f"❌ Kernel run ended with status: {status_str}")
-            if status_res.get("failureMessage"):
-                log(f"Failure message: {status_res.get('failureMessage')}")
+        elif "KernelWorkerStatus.FAILED" in st_out or "FAILED" in st_out or "ERROR" in st_out:
+            log(f"❌ Kernel run FAILED: {st_out}")
             return False
 
         time.sleep(poll_interval)
@@ -107,37 +122,29 @@ def wait_for_commit(api: KaggleApi, max_wait_sec=5400, poll_interval=30):
     log(f"⚠️ Commit wait timed out after {max_wait_sec}s")
     return False
 
-def submit_kernel(api: KaggleApi):
+def submit_kernel(version_num: int):
     log("\n" + "=" * 80)
-    log("🚀 DISPATCHING SUBMISSION VERSION 34 TO ENVEDA CASMI 2026")
+    log(f"🚀 DISPATCHING SUBMISSION VERSION 34 (Kernel Version {version_num}) TO ENVEDA CASMI 2026")
     log("=" * 80)
 
-    # Fetch latest kernel output files
-    log("Inspecting output files of latest kernel commit...")
-    files_res = api.kernels_output(KERNEL_SLUG)
-    out_files = files_res.get("files", [])
-    sub_file = None
-    for f in out_files:
-        name = f.get("name", "")
-        if name == "submission.csv":
-            sub_file = f
-            break
-
-    if not sub_file:
-        log("❌ Could not find submission.csv in kernel output!")
-        return None
-
-    log(f"✓ Found submission.csv: {sub_file}")
-
-    # Trigger competition submission
-    log(f"Submitting with description: '{VERSION_LABEL}'...")
-    sub_res = api.competition_submit(
-        file_name="submission.csv",
-        message=VERSION_LABEL,
-        competition=COMPETITION
+    sub_cmd = (
+        f"kaggle competitions submit -c {COMPETITION} "
+        f"-f submission.csv "
+        f"-k {KERNEL_SLUG} "
+        f"-v {version_num} "
+        f'-m "{VERSION_LABEL}"'
     )
-    log(f"Submission API response: {sub_res}")
-    return sub_res
+    sub_res = run_cmd(sub_cmd)
+    sub_output = (sub_res.stdout + "\n" + sub_res.stderr).strip()
+    log(f"Competition submit output:\n{sub_output}")
+
+    sub_ref = None
+    for token in sub_output.split():
+        if token.isdigit() and len(token) >= 7:
+            sub_ref = int(token)
+            break
+    log(f"🎯 Submission Reference: {sub_ref}")
+    return sub_ref
 
 def main():
     parser = argparse.ArgumentParser(description="Deploy and Submit Version 34 to Kaggle")
@@ -151,12 +158,13 @@ def main():
         if not pushed:
             sys.exit(1)
 
-    ok = wait_for_commit(api)
+    ok = wait_for_commit()
     if not ok:
         sys.exit(1)
 
-    sub_res = submit_kernel(api)
-    if not sub_res:
+    ver = get_current_kernel_version()
+    sub_ref = submit_kernel(ver)
+    if not sub_ref:
         sys.exit(1)
 
     log("✓ Version 34 dispatched successfully.")
