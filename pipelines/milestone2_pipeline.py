@@ -54,6 +54,12 @@ from chemistry.ms_engine import (
     RegimeAReferenceEngine
 )
 
+from ranking.regio_generator import (
+    to_canonical_inchikey14,
+    generate_constitutional_isomers,
+    admit_candidates_safely
+)
+
 import frag_rescore
 
 # =============================================================================
@@ -333,28 +339,40 @@ class Milestone2Pipeline:
 
             # Backfill vacant slots if duplicate removal left < 25 candidates
             if len(deduped_smis) < 25:
-                # Try fallback pool first
+                # Step A: Safe admission from secondary database fallback pool
                 fb_pool = fallback_candidates.get(mid, [])
-                for s in fb_pool:
-                    if s in deduped_smis:
-                        continue
-                    k14 = smiles_to_inchikey14(s)
-                    if k14 is not None:
-                        if k14 in seen_k14:
-                            continue
-                        seen_k14.add(k14)
-                    deduped_smis.append(s)
-                    stats["fallback_fills"] += 1
-                    if len(deduped_smis) == 25:
-                        break
+                deduped_smis, adm_fb = admit_candidates_safely(
+                    deduped_smis, fb_pool, target_count=25
+                )
+                stats["fallback_fills"] += adm_fb["pool_admitted"]
 
-            # Secondary fallback if still < 25
+            # Step B: Regime C Constitutional Regioisomer Generation + MetFrag-lite scoring
+            if len(deduped_smis) < 25 and len(deduped_smis) > 0:
+                parent_smi = deduped_smis[0]
+                regio_cands = generate_constitutional_isomers(
+                    parent_smi, max_variants=25, existing_keys=seen_k14
+                )
+                if regio_cands:
+                    regio_fscores = frag_rescore.score_molecule(
+                        pooled_specs, regio_cands, cfg=frag_cfg, cache=frag_cache
+                    )
+                    scored_regios = [
+                        (s, sc if sc is not None else 0.0)
+                        for s, sc in zip(regio_cands, regio_fscores)
+                    ]
+                    scored_regios.sort(key=lambda x: x[1], reverse=True)
+                    sorted_regios = [s for s, _ in scored_regios]
+                    deduped_smis, adm_regio = admit_candidates_safely(
+                        deduped_smis, sorted_regios, target_count=25
+                    )
+                    stats["regio_fills"] = stats.get("regio_fills", 0) + adm_regio["pool_admitted"]
+
+            # Step C: Ultimate safety fallback (only if still < 25)
             if len(deduped_smis) < 25:
-                for s in base_candidates.get(mid, []):
-                    if s not in deduped_smis:
-                        deduped_smis.append(s)
-                        if len(deduped_smis) == 25:
-                            break
+                base_pool = base_candidates.get(mid, [])
+                deduped_smis, _ = admit_candidates_safely(
+                    deduped_smis, base_pool, target_count=25
+                )
 
             assert len(deduped_smis) == 25, f"Query {mid} has {len(deduped_smis)} candidates instead of 25"
             out_rows.append({"molecule_id": mid, "smiles": ";".join(deduped_smis)})

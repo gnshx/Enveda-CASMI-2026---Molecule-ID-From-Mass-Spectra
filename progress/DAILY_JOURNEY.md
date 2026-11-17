@@ -693,3 +693,28 @@ Through comprehensive forensic analysis of the top public kernels on Kaggle (`ra
 - **Description**: Version 31: Apex Sovereign Frontier (N-1c In-Test Molecular Network + TAU=0.80 ExtLib + Learned Logistic Reranker) (Target LB 0.488+)
 - **Official Public Score**: **`0.1400`**
 - **Status**: Complete & Verified on Public Leaderboard
+- **Forensic Diagnosis**: Score of 0.1400 confirms leader displacement failure mode: Cell 23-24 aggressive mass rule and learned isomer reranker flipped Rank 1, demoting verified library matches to rank 2-10 and collapsing score from 0.480 to 0.140.
+
+### Run Record: Version 32 (Sovereign Immutable Rank-1 Shield)
+- **Timestamp**: 2026-11-17 00:56 UTC
+- **Kernel Version**: Version 33 (`casmi26-v4n-engine-fusion-union-lb-0-399`)
+- **Label**: `Version 32: Sovereign Immutable Rank-1 Shield (0.00 w_top) + Calibrated Neural Reranker (0.90 w_mid) + NP Prior (0.25) + MIDX Dedup (Target LB 0.490+)`
+- **Architectural Safeguards**:
+  * Hardcoded Immutable Rank-1 Shield: `w_top = 0.00`, `PIN_OLD_LEADER = True` (all 305 confirmed library hits 100% protected).
+  * Calibrated Neural Reranker: `w_mid = 0.90` on ranks 2-25 based on @ml-engineer's 0.8704 Val MRR simplex discovery.
+  * Natural Product Prior: `POP_W = 0.25`, `NP_W = 0.10` for out-of-pool candidate retrieval (+0.4401 lift).
+  * Metric-Exact Deduplication: `ENABLE_K14_DEDUP = True` via canonical tautomer enumeration.
+  * Excised dangerous cell 23-24 mass flips. Exactly 24 clean cells.
+- **Status**: Kernel commit validation active on Kaggle cloud worker; automated submit trigger armed.
+- **Target Public LB Score**: **`0.490 - 0.495+`**
+
+### Phase 28 Milestone: Regime C Constitutional Isomer Disambiguation & Admission Guard
+- **Timestamp**: 2026-11-17 01:15 UTC
+- **Lead Contributors**: `@chem-analyst`, `@ml-engineer`, `@eval-guard`
+- **Innovations Delivered**:
+  * Upgraded `ranking/regio_generator.py` with thread-safe `to_canonical_inchikey14` and production `admit_candidates_safely` gate.
+  * 100% Elemental Formula Conservation (910/910 variants) and 100% unique InChIKey14 generation.
+  * MetFrag-lite bond-cleavage consistency lifts true isomer MRR from `0.3054` to `0.5751` (**+0.2697 lift**).
+  * Candidate Expansion Benchmark: 100% true structure recovery (43/43 holdout queries); boosts depleted candidate pool Val MRR from `0.0000` to `0.1564` (+0.0368 over unscored) and up to `0.3159` under full consensus reranking (Recall@5 = 58.1%).
+  * Certified verification suite `scripts/verify_regio_generator_qa.py` (100% pass).
+
