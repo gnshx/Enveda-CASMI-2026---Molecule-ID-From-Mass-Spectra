@@ -112,7 +112,7 @@ def submit_kernel_version(ver: int, desc: str):
     log(f"🚀 SUBMITTING KERNEL VERSION {ver} TO {COMPETITION}...")
     cmd = (
         f'kaggle competitions submit -c {COMPETITION} '
-        f'-k {KERNEL_SLUG} -v {ver} -d "{desc}" -f submission.csv'
+        f'-k {KERNEL_SLUG} -v {ver} -m "{desc}" -f submission.csv'
     )
     res = run_cmd(cmd, timeout_sec=120)
     log(f"Submission stdout: {res.stdout.strip()}")
@@ -150,8 +150,8 @@ def main():
 
     # 1. State tracking
     v34_score = None
-    v35_submitted = False
-    v35_ref = None
+    v35_submitted = True
+    v35_ref = "58464539"
     v35_score = None
     v36_pushed = False
     v36_submitted = False
