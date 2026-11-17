@@ -772,3 +772,10 @@ Through comprehensive forensic analysis of the top public kernels on Kaggle (`ra
 - **Description**: test message
 - **Official Public Score**: **`0.4800`**
 - **Status**: Complete & Verified on Public Leaderboard
+
+### Official Score Verified: Version 35
+- **Timestamp**: 2026-11-17 16:56:26 UTC
+- **Submission Ref**: `58464539`
+- **Description**: Version 35: Frontier Sovereign Constrained Molecular Network (tau >= 0.70, lambda = 0.20) + Restored Dual-Neural Ensemble + Strict Rank-1 Shield (Target LB 0.495+)
+- **Official Public Score**: **`0.4800`**
+- **Status**: Complete & Verified on Public Leaderboard
