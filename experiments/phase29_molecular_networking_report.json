@@ -1,0 +1,50 @@
+{
+  "timestamp_utc": "2026-11-17 01:33:04 UTC",
+  "agent": "ml-engineer",
+  "phase": 29,
+  "experiment": "In-Test Molecular Networking with Hard Rank-1 Shield",
+  "topology": {
+    "tau_0.50": {
+      "num_edges": 277,
+      "mean_tanimoto": 0.2527,
+      "pct_scaffold_homology_ge_050": 14.8
+    },
+    "tau_0.60": {
+      "num_edges": 101,
+      "mean_tanimoto": 0.3379,
+      "pct_scaffold_homology_ge_050": 27.7
+    },
+    "tau_0.70": {
+      "num_edges": 37,
+      "mean_tanimoto": 0.4547,
+      "pct_scaffold_homology_ge_050": 43.2
+    }
+  },
+  "results": {
+    "baseline": {
+      "val_mrr25": 0.811,
+      "recall1": 0.748,
+      "recall5": 1.0
+    },
+    "unconstrained_v31": {
+      "val_mrr25": 0.84,
+      "recall1": 0.748,
+      "recall5": 1.0,
+      "top1_flipped": 0,
+      "delta_mrr": 0.029
+    },
+    "shielded_phase29": {
+      "val_mrr25": 0.84,
+      "recall1": 0.748,
+      "recall5": 1.0,
+      "top1_flipped_on_shielded": 0,
+      "delta_mrr_vs_base": 0.029,
+      "delta_mrr_vs_unconstrained": 0.0
+    }
+  },
+  "mathematical_formulation": {
+    "regime_a_shield": "c_1 is frozen (w_top = 0.00). Ranks 2..25 reordered via S(c_i) = z(-ln(i)) + lambda * z(N(c_i)).",
+    "regime_b_c": "S(c_i) = z(-ln(i)) + lambda * z(N(c_i)) with anchor-weighting from neighbor Regime A hits.",
+    "support_kernel": "N(c_i) = sum_{b in N(m)} w(m, b)^4 * sum_{j=1}^{K_nb} (1/j) * Tanimoto(FP(c_i), FP(c_j^(b)))"
+  }
+}
