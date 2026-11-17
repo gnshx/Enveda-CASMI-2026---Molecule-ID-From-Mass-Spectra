@@ -1,45 +1,47 @@
 # 🚦 PROJECT_STATUS.md
 # Real-Time Project Status & Live Execution Dashboard
-**Status Timestamp**: 2026-11-17 05:32 IST (2026-11-17 00:02 UTC)  
+**Status Timestamp**: 2026-11-17 13:58 IST (2026-11-17 08:28 UTC)  
 **Competition Deadline**: 2026-12-14 23:59 UTC (27 days remaining)  
 
 ---
 
-## 1. Live Competition Standings
+## 1. Live Competition Standings & Leaderboard Audit
 
-| Rank / Position | Team / Competitor | Public Score (MRR@25) | Strategy / Known Approach |
+| Rank / Position | Team / Competitor / Version | Public Score (MRR@25) | Strategy / Known Approach |
 |:---:|---|:---:|---|
 | **#1** | `Shehab Alshehabi` | **`0.549`** | Multi-channel retrieval + deep analog propagation + ensemble reranking |
 | **#2** | `democat` | **`0.540`** | Hybrid spectral library + molecular network fusion |
 | **#3** | `Oleksandr Parfionov` | **`0.536`** | Learned candidate reranker + formula filtering |
 | **#4** | `Savko` | **`0.528`** | Top-1 evidence gap closing + external libraries |
 | **Top 20 Cutoff** | `huytngo` | **`0.503`** | Peaks to structures + network reranking |
-| **Our Active Deployment** | **Version 32 (Kernel v33)** | **`Pending`** | **Sovereign Immutable Rank-1 Shield (0.00 w_top) + Calibrated Neural Reranker (0.90 w_mid) + NP Prior (0.25) + MIDX Dedup (Target: 0.490 – 0.495+)** |
+| **Our Active Deployment** | **Version 34 (Kernel v34)** | **`Commit Running (~12m)`** | **Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target: 0.485+)** |
 | **Our Verified PB** | **Version 24 (Ref `57982390`)** | **`0.4800`** | Dual-Neural Z-Score Ensemble (Saner v1 + Scorer v2) + MIDX Dedup |
+| **Our Top 2 Model** | **Version 22 / 23 (Ref `57915796`)** | **`0.4790`** | Baidalin MIDX Exact Dedup Fill (Clean Saner v1 + In-Pool Deduplication) |
+| **Recent Deployment** | **Version 32 (Ref `58451032`)** | **`0.4670`** | Scorer v5 320-dim missed `_swap_to_ours` detection; fell back to single model |
 
 ---
 
-## 2. Active Run Telemetry: Version 32 (Kernel Version 33)
+## 2. Active Run Telemetry: Version 34 (Kernel Version 34)
 
 - **Kernel Slug**: `nukaladevisaiganesh/casmi26-v4n-engine-fusion-union-lb-0-399`
-- **Pushed At**: `2026-11-17 00:56:10 UTC`
-- **Kaggle Status**: `KernelWorkerStatus.RUNNING` (Commit validation active on Kaggle cloud worker)
-- **Monitoring Runner**: `scripts/deploy_and_submit_v32.py --submit-only` (PID `1344262`) actively polling every 15s to trigger competition submission upon commit completion.
-- **Architectural Safeguards**:
-  - `w_top = 0.00` & `PIN_OLD_LEADER = True`: 100% hard protection for all 305 verified Regime A reference library hits.
-  - `w_mid = 0.90`: Simplex optimal weight for Scorer v2 on ranks 2–25 (+0.0541 Val MRR lift).
-  - `POP_W = 0.25`, `NP_W = 0.10`: Natural product prior for out-of-pool candidate discovery (+0.4401 lift).
-  - Metric-Exact Deduplication: `ENABLE_K14_DEDUP = True` via canonical tautomer enumeration.
-- **Monitoring Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1338448`) 24/7 master lab daemon actively polling every 45 seconds with hardware & system telemetry.
+- **Pushed At**: `2026-11-17 08:16:26 UTC`
+- **Kaggle Status**: `KernelWorkerStatus.RUNNING` (Commit validation actively executing on Kaggle cloud worker, ~12.3m elapsed)
+- **Monitoring Runner**: `scripts/deploy_and_submit_v34.py` (PID `1357227`) actively polling every 15s to trigger competition submission upon commit completion.
+- **Architectural Enhancements**:
+  - **Restored Dual-Neural Backbone**: Reconnected `bgunshui/casmi26-scorer-v2-model` into dataset metadata and restored proven $0.50 \cdot z(\text{Saner v1}) + 0.50 \cdot z(\text{Scorer v2})$ consensus.
+  - **Sovereign Rank-1 Shield**: `w_top = 0.00` & `PIN_OLD_LEADER = True`: 100% hard protection for all confirmed Regime A reference library hits.
+  - **Calibrated Documentation Prior**: Balanced weights `POP_W = 0.10, SPEC_W = 0.05, NP_W = 0.02` ensuring rare natural metabolites are not over-penalized.
+  - **Metric-Exact Deduplication**: `ENABLE_K14_DEDUP = True` via canonical tautomer enumeration across all 25 candidate slots.
+- **Monitoring Daemon**: `scripts/autonomous_lab_daemon.py` (PID `1357472`) 24/7 master lab daemon actively polling every 45s with hardware & system telemetry.
 
 ---
 
 ## 3. Daily Resource Budget
 
-- **Daily Submission Quota**: **5 of 5 submissions available** (Reset at 00:00 UTC on 2026-11-17).
-- **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 100% idle, 28 MiB used, 39°C, ready for local model training and validation benchmarks.
-- **Kaggle GPU Quota**: Healthy. Kernel Version 33 executing commit validation on Kaggle cloud.
-- **Code Repository**: Synchronized with GitHub `main` at commit `d9c945c`.
+- **Daily Submission Quota**: **4 of 5 submissions available** (Ref 58451032 used 1; 4 remaining for 2026-11-17 UTC).
+- **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 100% idle, 28 MiB used, 38°C.
+- **System Memory & Disk**: 20.39 GB disk free; all zombie release upgrader processes permanently terminated.
+- **Code Repository**: Synchronized with GitHub `main` at commit `8e55c56`.
 
 ---
 
