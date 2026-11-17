@@ -40,7 +40,7 @@
 
 ## 3. Daily Resource Budget
 
-- **Daily Submission Quota**: **2 of 5 submissions available** (Ref 58451032, Ref 58462901, and Ref 58464539 used; 2 remaining for 2026-11-17 UTC).
+- **Daily Submission Quota**: **1 of 5 submissions available** (4 used: Ref 58451032, 58462901, 58464539, 58464568; 1 remaining strictly reserved for Version 36).
 - **Local Compute**: NVIDIA GeForce RTX 3060 (12GB VRAM) — 41°C, 12,054 MiB free.
 - **System Memory & Disk**: 20.45 GB disk free.
 - **Code Repository**: Synchronized with GitHub `main`.
