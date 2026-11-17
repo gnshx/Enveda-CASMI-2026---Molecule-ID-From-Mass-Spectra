@@ -64,6 +64,12 @@ def log(msg: str):
 def run_cmd(cmd: str, cwd=None, timeout_sec=60) -> tuple[int, str]:
     try:
         env = os.environ.copy()
+        # Unset proxy for git commands so GitHub connects directly
+        if "git" in cmd:
+            env.pop("https_proxy", None)
+            env.pop("http_proxy", None)
+            env.pop("HTTP_PROXY", None)
+            env.pop("HTTPS_PROXY", None)
         res = subprocess.run(
             cmd,
             shell=True,
@@ -327,7 +333,7 @@ def daemon_main():
     log(f"🚀 CASMI 2026 24/7 AUTONOMOUS RESEARCH LAB MASTER DAEMON STARTED (PID {pid})")
     log("=" * 70)
     
-    seen_completed = {57982390, 57983294, 57992067, 57992109, 58021007, 58168204, 58168293}
+    seen_completed = {57982390, 57983294, 57992067, 57992109, 58021007, 58168204, 58168293, 58442788, 58451032}
     zombie_refs = {58168204, 58168293}
     
     last_telemetry_time = 0.0
