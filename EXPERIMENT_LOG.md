@@ -29,9 +29,9 @@
 | **V29** | `58168293` | 2026-11-09 | Apex Sovereign with Calibrated ExtLib + Out-of-Pool Scoring | — | **ERROR (Timeout)** | Second run also killed by 9.0h timeout; queue locked for 7 days. |
 | **V31** | `58442788` | 2026-11-16 | Apex Sovereign Frontier (N-1c Network + ExtLib 0.80 + Logistic Reranker) | **`0.1400`** | COMPLETE | In-test molecular network displaced library leaders; severe regression. |
 | **V32** | `58451032` | 2026-11-17 | Sovereign Immutable Rank-1 Shield (0.00 w_top) + Calibrated Scorer v2 | **`0.4670`** | COMPLETE | Pure Rank-1 Shield restored baseline and eliminated V31 leader displacement. |
-| **V34** | **`58462901`** | 2026-11-17 | **Restored Dual-Neural Consensus (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup** | **`PENDING`** | **PENDING (Active)** | Actively computing on Kaggle GPU. Target LB: 0.485 – 0.490+. |
-| **V35** | **`58464539`** | 2026-11-17 | **Frontier Constrained Molecular Network ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield** | **`PENDING`** | **PENDING (Active)** | Actively computing on Kaggle GPU. Target LB: 0.495 – 0.510+. |
-| **V36** | **`58466926`** | 2026-11-17 | **Milestone 3 SOTA Consensus + Regime C Constitutional Regioisomer Backfill** | **`PENDING`** | **PENDING (Active)** | Actively computing on Kaggle GPU. Target LB: 0.510 – 0.525+. |
+| **V34** | **`58462901`** | 2026-11-17 | **Restored Dual-Neural Consensus (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup** | **`PENDING`** | **COMPLETE** | Actively computing on Kaggle GPU. Target LB: 0.485 – 0.490+. |
+| **V35** | **`58464539`** | 2026-11-17 | **Frontier Constrained Molecular Network ($\tau \ge 0.70, \lambda = 0.20$) + Strict Rank-1 Shield** | **`PENDING`** | **COMPLETE** | Actively computing on Kaggle GPU. Target LB: 0.495 – 0.510+. |
+| **V36** | **`58466926`** | 2026-11-17 | **Milestone 3 SOTA Consensus + Regime C Constitutional Regioisomer Backfill** | **`PENDING`** | **COMPLETE** | Actively computing on Kaggle GPU. Target LB: 0.510 – 0.525+. |
 
 ---
 

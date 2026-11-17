@@ -334,3 +334,4 @@ Enveda-CASMI-2026/
 
 - **Version 31** (Ref `58442788`): Apex Sovereign Frontier -> **Verified Public LB: 0.1400** [COMPLETE]
 | 2026-11-17 | Version 31 (Ref 58442788) | Version 31: Apex Sovereign Frontier (N-1c In-Test Molecular Network + TAU=0.80 ExtLib + Learned Logistic Reranker) (Target LB 0.488+) | **0.1400** | Succeeded |
+| 2026-11-17 | Version 34 (Ref 58462901) | Version 34: Sovereign Restored Dual-Neural Ensemble (Saner v1 + Scorer v2) + Pure Rank-1 Shield + MIDX Dedup (Target LB 0.485+) | **0.4800** | Succeeded |
