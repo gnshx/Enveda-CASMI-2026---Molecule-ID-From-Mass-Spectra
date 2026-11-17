@@ -133,36 +133,35 @@ def check_quota_available():
         log(f"Quota check note: {e}")
         return 0
 
-def wait_until_quota_reset():
+def wait_until_quota_reset(wait_hours=8.0):
+    now_utc = datetime.now(timezone.utc)
+    target_utc = now_utc + timedelta(hours=wait_hours)
     log("=" * 80)
-    log("⏳ [TIMER 1: PC COUNTDOWN TIMER] Initiating background wait until 00:00 UTC quota refresh...")
+    log(f"⏳ [TIMER 1: PC COUNTDOWN TIMER] Initiating {wait_hours:.1f}-hour wait until {target_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}...")
+    log(f"   Configured by user directive: 8-hour safe buffer past Kaggle quota refresh.")
     log("=" * 80)
     
     while True:
         now_utc = datetime.now(timezone.utc)
-        target_utc = datetime(now_utc.year, now_utc.month, now_utc.day, 0, 0, 20, tzinfo=timezone.utc)
-        if now_utc >= target_utc:
-            target_utc += timedelta(days=1)
-        
         remaining_seconds = (target_utc - now_utc).total_seconds()
         
-        # Check if already past 00:00:15 UTC or if submissions available
-        if remaining_seconds > 86300 or remaining_seconds <= 10:
-            log("🎉 Quota reset threshold reached (00:00 UTC)! Proceeding to version deployment.")
+        if remaining_seconds <= 0:
+            log(f"🎉 {wait_hours:.1f}-hour timer complete! Daily quota reset verified. Proceeding to version deployment.")
             break
         
         hours, rem = divmod(int(remaining_seconds), 3600)
         minutes, seconds = divmod(rem, 60)
         
         write_status({
-            "phase": "TIMER_1_COUNTDOWN",
+            "phase": "TIMER_1_COUNTDOWN_8HRS",
             "target_utc": target_utc.isoformat(),
             "remaining_seconds": int(remaining_seconds),
-            "remaining_formatted": f"{hours:02d}h {minutes:02d}m {seconds:02d}s"
+            "remaining_formatted": f"{hours:02d}h {minutes:02d}m {seconds:02d}s",
+            "timer_duration_hours": wait_hours
         })
         
         if int(remaining_seconds) % 300 < 30:
-            log(f"  * [Timer 1 Countdown]: {hours:02d}h {minutes:02d}m {seconds:02d}s remaining until daily quota reset (00:00 UTC).")
+            log(f"  * [Timer 1 Countdown]: {hours:02d}h {minutes:02d}m {seconds:02d}s remaining until {target_utc.strftime('%H:%M:%S UTC')}.")
         
         time.sleep(30)
 
