@@ -1,9 +1,9 @@
 {
-  "timestamp": "2026-11-16T20:52:17Z",
+  "timestamp": "2026-11-17T01:17:45Z",
   "output_file": "submissions/submission_milestone2.csv",
   "rows": 400,
-  "total_execution_seconds": 93.10750126838684,
-  "runtime_budget_hours_used": 0.02586319479677412,
+  "total_execution_seconds": 95.02520751953125,
+  "runtime_budget_hours_used": 0.02639589097764757,
   "runtime_budget_limit_hours": 7.5,
   "stats": {
     "regime_a_shielded": 305,
