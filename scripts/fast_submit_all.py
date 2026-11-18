@@ -178,6 +178,7 @@ def submit_version(kernel_ver_num: int, label: str, version_tag: str) -> bool:
     res = run_cmd([
         KAGGLE_BIN, "competitions", "submit",
         "-c", COMPETITION,
+        "-f", "submission.csv",
         "-k", KERNEL_SLUG,
         "-v", str(kernel_ver_num),
         "-m", label
