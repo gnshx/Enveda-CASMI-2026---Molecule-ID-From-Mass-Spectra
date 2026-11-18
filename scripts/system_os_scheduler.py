@@ -86,6 +86,8 @@ def write_status(state: dict):
 
 def run_cmd(cmd: str, timeout_sec=300):
     env = os.environ.copy()
+    env['PATH'] = '/home/dlcv/anaconda3/bin:/usr/local/bin:/usr/bin:/bin:' + env.get('PATH', '')
+    env['PYTHONPATH'] = '/home/dlcv/anaconda3/lib/python3.12/site-packages'
     try:
         res = subprocess.run(
             cmd,
