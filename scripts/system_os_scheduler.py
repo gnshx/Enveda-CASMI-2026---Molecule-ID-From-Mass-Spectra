@@ -135,12 +135,13 @@ def check_quota_available():
         log(f"Quota check note: {e}")
         return 0
 
-def wait_until_quota_reset(wait_hours=8.0):
+def wait_until_quota_reset():
     now_utc = datetime.now(timezone.utc)
-    target_utc = now_utc + timedelta(hours=wait_hours)
+    target_utc = now_utc.replace(hour=0, minute=0, second=15, microsecond=0)
+    if target_utc <= now_utc:
+        target_utc += timedelta(days=1)
     log("=" * 80)
-    log(f"⏳ [TIMER 1: PC COUNTDOWN TIMER] Initiating {wait_hours:.1f}-hour wait until {target_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}...")
-    log(f"   Configured by user directive: 8-hour safe buffer past Kaggle quota refresh.")
+    log(f"⏳ [TIMER 1: PC COUNTDOWN TIMER] Waiting for the next Kaggle UTC quota reset at {target_utc.strftime('%Y-%m-%d %H:%M:%S UTC')}...")
     log("=" * 80)
     
     while True:
@@ -148,18 +149,23 @@ def wait_until_quota_reset(wait_hours=8.0):
         remaining_seconds = (target_utc - now_utc).total_seconds()
         
         if remaining_seconds <= 0:
-            log(f"🎉 {wait_hours:.1f}-hour timer complete! Daily quota reset verified. Proceeding to version deployment.")
-            break
+            remaining_quota = check_quota_available()
+            if remaining_quota >= len(VERSIONS_QUEUE):
+                log(f"🎉 Quota reset verified ({remaining_quota} submissions available). Proceeding with the three-version queue.")
+                break
+            log(f"Quota API reports {remaining_quota} slots; waiting 5 minutes before checking again.")
+            time.sleep(300)
+            continue
         
         hours, rem = divmod(int(remaining_seconds), 3600)
         minutes, seconds = divmod(rem, 60)
         
         write_status({
-            "phase": "TIMER_1_COUNTDOWN_8HRS",
+            "phase": "WAITING_FOR_UTC_QUOTA_RESET",
             "target_utc": target_utc.isoformat(),
             "remaining_seconds": int(remaining_seconds),
             "remaining_formatted": f"{hours:02d}h {minutes:02d}m {seconds:02d}s",
-            "timer_duration_hours": wait_hours
+            "versions_queued": [v["version_tag"] for v in VERSIONS_QUEUE]
         })
         
         if int(remaining_seconds) % 300 < 30:
@@ -200,7 +206,7 @@ def deploy_version(v_info: dict):
     start_commit = time.time()
     commit_ok = False
     
-    while time.time() - start_commit < 5400: # 90 minutes max
+    while time.time() - start_commit < 14400: # allow up to 4h for Kaggle queue + execution
         st_res = run_cmd(f"kaggle kernels status {KERNEL_SLUG}")
         st_out = (st_res.stdout + " " + st_res.stderr).strip()
         elapsed_m = (time.time() - start_commit) / 60.0
@@ -225,7 +231,7 @@ def deploy_version(v_info: dict):
         time.sleep(15)
         
     if not commit_ok:
-        log("❌ Kernel commit timed out after 90m.")
+        log("❌ Kernel commit timed out after 4h.")
         return False
         
     # Determine the kernel version number
@@ -234,7 +240,7 @@ def deploy_version(v_info: dict):
     
     # 3. Timer 3: Submit for Hidden Cases
     log("\n📥 [TIMER 3: SUBMITTING HIDDEN CASES] Triggering hidden test evaluation...")
-    sub_cmd = f'kaggle competitions submit -c {COMPETITION} -k {KERNEL_SLUG} '
+    sub_cmd = f'kaggle competitions submit -c {COMPETITION} -f submission.csv -k {KERNEL_SLUG} '
     if k_ver is not None:
         sub_cmd += f'-v {k_ver} '
     sub_cmd += f'-m "{label}"'
@@ -244,6 +250,10 @@ def deploy_version(v_info: dict):
     if sub_res.stderr.strip():
         log(f"Submission stderr: {sub_res.stderr.strip()}")
         
+    if sub_res.returncode != 0 or "submission ref" not in sub_res.stdout.lower():
+        log(f"❌ Kaggle did not accept {v_tag}; skipping its score poll and continuing to the next queued version.")
+        return False
+
     time.sleep(20)
     
     # 4. Timer 4: Track Hidden Evaluation Score

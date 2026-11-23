@@ -36,8 +36,18 @@ def log(msg: str):
         f.write(line + "\n")
 
 def run_cmd(cmd: str):
-    res = subprocess.run(cmd, env=ENV, shell=True, capture_output=True, text=True, cwd=str(ROOT))
-    return res
+    try:
+        return subprocess.run(
+            cmd,
+            env=ENV,
+            shell=True,
+            capture_output=True,
+            text=True,
+            cwd=str(ROOT),
+            timeout=45
+        )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(args=cmd, returncode=-1, stdout="", stderr="Timed out after 45 seconds")
 
 def check_local_training():
     """Check status of local GPU training."""
