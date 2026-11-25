@@ -1,0 +1,394 @@
+{
+  "timestamp_utc": "2026-11-25T18:12:14Z",
+  "ablations": {
+    "V45_control": {
+      "oof_mrr25": 0.8477,
+      "gate_thr": 0.0,
+      "np_b": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.4495,
+        "full_rerank_r1": 0.3,
+        "full_rerank_r5": 0.624,
+        "full_rerank_r25": 0.868,
+        "gated_mrr25": 0.4495,
+        "gated_r1": 0.3,
+        "gated_r5": 0.624,
+        "gated_r25": 0.868,
+        "rank1_swaps": 177,
+        "lib_locked": 3,
+        "promotions_correct": 48,
+        "demotions_incorrect": 10,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.1624,
+          "ci_low": 0.1203,
+          "ci_high": 0.2042,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.1624,
+          "ci_low": 0.1203,
+          "ci_high": 0.2042,
+          "p_win": 1.0
+        }
+      },
+      "np_mix": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.5569,
+        "full_rerank_r1": 0.432,
+        "full_rerank_r5": 0.704,
+        "full_rerank_r25": 0.884,
+        "gated_mrr25": 0.5569,
+        "gated_r1": 0.432,
+        "gated_r5": 0.704,
+        "gated_r25": 0.884,
+        "rank1_swaps": 184,
+        "lib_locked": 9,
+        "promotions_correct": 78,
+        "demotions_incorrect": 7,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2699,
+          "ci_low": 0.2228,
+          "ci_high": 0.318,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2699,
+          "ci_low": 0.2228,
+          "ci_high": 0.318,
+          "p_win": 1.0
+        }
+      },
+      "th": {
+        "n_queries": 1000,
+        "incumbent_mrr25": 0.574,
+        "incumbent_r1": 0.42,
+        "incumbent_r5": 0.767,
+        "incumbent_r25": 0.952,
+        "full_rerank_mrr25": 0.8149,
+        "full_rerank_r1": 0.718,
+        "full_rerank_r5": 0.938,
+        "full_rerank_r25": 0.977,
+        "gated_mrr25": 0.8147,
+        "gated_r1": 0.718,
+        "gated_r5": 0.938,
+        "gated_r25": 0.977,
+        "rank1_swaps": 504,
+        "lib_locked": 1,
+        "promotions_correct": 323,
+        "demotions_incorrect": 25,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2409,
+          "ci_low": 0.2198,
+          "ci_high": 0.2632,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2407,
+          "ci_low": 0.2196,
+          "ci_high": 0.2631,
+          "p_win": 1.0
+        }
+      }
+    },
+    "V47_plus_formula_adduct": {
+      "oof_mrr25": 0.8488,
+      "gate_thr": 0.3,
+      "np_b": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.4526,
+        "full_rerank_r1": 0.304,
+        "full_rerank_r5": 0.624,
+        "full_rerank_r25": 0.872,
+        "gated_mrr25": 0.45,
+        "gated_r1": 0.304,
+        "gated_r5": 0.624,
+        "gated_r25": 0.872,
+        "rank1_swaps": 147,
+        "lib_locked": 3,
+        "promotions_correct": 44,
+        "demotions_incorrect": 5,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.1656,
+          "ci_low": 0.1245,
+          "ci_high": 0.2078,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.1629,
+          "ci_low": 0.1242,
+          "ci_high": 0.2016,
+          "p_win": 1.0
+        }
+      },
+      "np_mix": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.5573,
+        "full_rerank_r1": 0.432,
+        "full_rerank_r5": 0.7,
+        "full_rerank_r25": 0.888,
+        "gated_mrr25": 0.5451,
+        "gated_r1": 0.412,
+        "gated_r5": 0.7,
+        "gated_r25": 0.888,
+        "rank1_swaps": 153,
+        "lib_locked": 9,
+        "promotions_correct": 70,
+        "demotions_incorrect": 4,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2703,
+          "ci_low": 0.2232,
+          "ci_high": 0.3188,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2581,
+          "ci_low": 0.2142,
+          "ci_high": 0.3037,
+          "p_win": 1.0
+        }
+      },
+      "th": {
+        "n_queries": 1000,
+        "incumbent_mrr25": 0.574,
+        "incumbent_r1": 0.42,
+        "incumbent_r5": 0.767,
+        "incumbent_r25": 0.952,
+        "full_rerank_mrr25": 0.8141,
+        "full_rerank_r1": 0.716,
+        "full_rerank_r5": 0.938,
+        "full_rerank_r25": 0.975,
+        "gated_mrr25": 0.8137,
+        "gated_r1": 0.716,
+        "gated_r5": 0.938,
+        "gated_r25": 0.975,
+        "rank1_swaps": 463,
+        "lib_locked": 1,
+        "promotions_correct": 308,
+        "demotions_incorrect": 12,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.24,
+          "ci_low": 0.2196,
+          "ci_high": 0.2627,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2397,
+          "ci_low": 0.2193,
+          "ci_high": 0.2615,
+          "p_win": 1.0
+        }
+      }
+    },
+    "V48_plus_rare_ce": {
+      "oof_mrr25": 0.8495,
+      "gate_thr": 0.15,
+      "np_b": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.4519,
+        "full_rerank_r1": 0.296,
+        "full_rerank_r5": 0.64,
+        "full_rerank_r25": 0.868,
+        "gated_mrr25": 0.4512,
+        "gated_r1": 0.296,
+        "gated_r5": 0.64,
+        "gated_r25": 0.868,
+        "rank1_swaps": 163,
+        "lib_locked": 3,
+        "promotions_correct": 45,
+        "demotions_incorrect": 8,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.1648,
+          "ci_low": 0.1232,
+          "ci_high": 0.2058,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.1642,
+          "ci_low": 0.1227,
+          "ci_high": 0.2048,
+          "p_win": 1.0
+        }
+      },
+      "np_mix": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.5554,
+        "full_rerank_r1": 0.428,
+        "full_rerank_r5": 0.704,
+        "full_rerank_r25": 0.884,
+        "gated_mrr25": 0.5514,
+        "gated_r1": 0.42,
+        "gated_r5": 0.704,
+        "gated_r25": 0.884,
+        "rank1_swaps": 169,
+        "lib_locked": 9,
+        "promotions_correct": 73,
+        "demotions_incorrect": 5,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2684,
+          "ci_low": 0.2212,
+          "ci_high": 0.317,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2644,
+          "ci_low": 0.218,
+          "ci_high": 0.3117,
+          "p_win": 1.0
+        }
+      },
+      "th": {
+        "n_queries": 1000,
+        "incumbent_mrr25": 0.574,
+        "incumbent_r1": 0.42,
+        "incumbent_r5": 0.767,
+        "incumbent_r25": 0.952,
+        "full_rerank_mrr25": 0.8127,
+        "full_rerank_r1": 0.717,
+        "full_rerank_r5": 0.939,
+        "full_rerank_r25": 0.977,
+        "gated_mrr25": 0.8126,
+        "gated_r1": 0.717,
+        "gated_r5": 0.939,
+        "gated_r25": 0.977,
+        "rank1_swaps": 483,
+        "lib_locked": 1,
+        "promotions_correct": 316,
+        "demotions_incorrect": 19,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2387,
+          "ci_low": 0.2172,
+          "ci_high": 0.2616,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2385,
+          "ci_low": 0.2173,
+          "ci_high": 0.2611,
+          "p_win": 1.0
+        }
+      }
+    },
+    "V48_plus_V46_emb": {
+      "oof_mrr25": 0.8505,
+      "gate_thr": 0.15,
+      "np_b": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.4485,
+        "full_rerank_r1": 0.288,
+        "full_rerank_r5": 0.636,
+        "full_rerank_r25": 0.872,
+        "gated_mrr25": 0.4495,
+        "gated_r1": 0.292,
+        "gated_r5": 0.636,
+        "gated_r25": 0.872,
+        "rank1_swaps": 162,
+        "lib_locked": 3,
+        "promotions_correct": 44,
+        "demotions_incorrect": 8,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.1614,
+          "ci_low": 0.1178,
+          "ci_high": 0.2031,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.1624,
+          "ci_low": 0.1198,
+          "ci_high": 0.2033,
+          "p_win": 1.0
+        }
+      },
+      "np_mix": {
+        "n_queries": 250,
+        "incumbent_mrr25": 0.2871,
+        "incumbent_r1": 0.148,
+        "incumbent_r5": 0.436,
+        "incumbent_r25": 0.756,
+        "full_rerank_mrr25": 0.5562,
+        "full_rerank_r1": 0.432,
+        "full_rerank_r5": 0.704,
+        "full_rerank_r25": 0.888,
+        "gated_mrr25": 0.5519,
+        "gated_r1": 0.424,
+        "gated_r5": 0.704,
+        "gated_r25": 0.888,
+        "rank1_swaps": 168,
+        "lib_locked": 9,
+        "promotions_correct": 74,
+        "demotions_incorrect": 5,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2692,
+          "ci_low": 0.221,
+          "ci_high": 0.3171,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2648,
+          "ci_low": 0.2196,
+          "ci_high": 0.3125,
+          "p_win": 1.0
+        }
+      },
+      "th": {
+        "n_queries": 1000,
+        "incumbent_mrr25": 0.574,
+        "incumbent_r1": 0.42,
+        "incumbent_r5": 0.767,
+        "incumbent_r25": 0.952,
+        "full_rerank_mrr25": 0.8138,
+        "full_rerank_r1": 0.717,
+        "full_rerank_r5": 0.939,
+        "full_rerank_r25": 0.979,
+        "gated_mrr25": 0.8136,
+        "gated_r1": 0.717,
+        "gated_r5": 0.939,
+        "gated_r25": 0.979,
+        "rank1_swaps": 483,
+        "lib_locked": 1,
+        "promotions_correct": 316,
+        "demotions_incorrect": 19,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2398,
+          "ci_low": 0.2188,
+          "ci_high": 0.2627,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.2396,
+          "ci_low": 0.2187,
+          "ci_high": 0.2623,
+          "p_win": 1.0
+        }
+      }
+    }
+  },
+  "elapsed_seconds": 911.18
+}
