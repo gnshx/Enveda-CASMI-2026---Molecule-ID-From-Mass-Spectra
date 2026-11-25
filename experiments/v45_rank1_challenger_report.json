@@ -1,0 +1,155 @@
+{
+  "timestamp_utc": "2026-11-25T15:01:34Z",
+  "results": {
+    "train_cv_oof": {
+      "oof_gate_threshold": 0.0,
+      "oof_stats": {
+        "n_queries": 1476,
+        "incumbent_mrr25": 0.6217,
+        "incumbent_r1": 0.4763,
+        "incumbent_r5": 0.815,
+        "incumbent_r25": 0.9539,
+        "full_rerank_mrr25": 0.8479,
+        "full_rerank_r1": 0.7676,
+        "full_rerank_r5": 0.9492,
+        "full_rerank_r25": 0.9831,
+        "gated_mrr25": 0.8477,
+        "gated_r1": 0.7676,
+        "gated_r5": 0.9485,
+        "gated_r25": 0.9831,
+        "rank1_swaps": 695,
+        "lib_locked": 135,
+        "promotions_correct": 473,
+        "demotions_incorrect": 43,
+        "ci_full_vs_incumbent": {
+          "mean_delta": 0.2262,
+          "ci_low": 0.2091,
+          "ci_high": 0.2451,
+          "p_win": 1.0
+        },
+        "ci_gated_vs_incumbent": {
+          "mean_delta": 0.226,
+          "ci_low": 0.2089,
+          "ci_high": 0.2446,
+          "p_win": 1.0
+        }
+      }
+    },
+    "np_examples_purged_regime_b": {
+      "n_queries": 250,
+      "incumbent_mrr25": 0.2871,
+      "incumbent_r1": 0.148,
+      "incumbent_r5": 0.436,
+      "incumbent_r25": 0.756,
+      "full_rerank_mrr25": 0.4495,
+      "full_rerank_r1": 0.3,
+      "full_rerank_r5": 0.624,
+      "full_rerank_r25": 0.868,
+      "gated_mrr25": 0.4495,
+      "gated_r1": 0.3,
+      "gated_r5": 0.624,
+      "gated_r25": 0.868,
+      "rank1_swaps": 177,
+      "lib_locked": 3,
+      "promotions_correct": 48,
+      "demotions_incorrect": 10,
+      "ci_full_vs_incumbent": {
+        "mean_delta": 0.1624,
+        "ci_low": 0.1203,
+        "ci_high": 0.2042,
+        "p_win": 1.0
+      },
+      "ci_gated_vs_incumbent": {
+        "mean_delta": 0.1624,
+        "ci_low": 0.1203,
+        "ci_high": 0.2042,
+        "p_win": 1.0
+      }
+    },
+    "np_examples_mixed_50A_50B": {
+      "n_queries": 250,
+      "incumbent_mrr25": 0.2871,
+      "incumbent_r1": 0.148,
+      "incumbent_r5": 0.436,
+      "incumbent_r25": 0.756,
+      "full_rerank_mrr25": 0.5569,
+      "full_rerank_r1": 0.432,
+      "full_rerank_r5": 0.704,
+      "full_rerank_r25": 0.884,
+      "gated_mrr25": 0.5569,
+      "gated_r1": 0.432,
+      "gated_r5": 0.704,
+      "gated_r25": 0.884,
+      "rank1_swaps": 184,
+      "lib_locked": 9,
+      "promotions_correct": 78,
+      "demotions_incorrect": 7,
+      "ci_full_vs_incumbent": {
+        "mean_delta": 0.2699,
+        "ci_low": 0.2228,
+        "ci_high": 0.318,
+        "p_win": 1.0
+      },
+      "ci_gated_vs_incumbent": {
+        "mean_delta": 0.2699,
+        "ci_low": 0.2228,
+        "ci_high": 0.318,
+        "p_win": 1.0
+      }
+    },
+    "timstof_holdout_regime_b": {
+      "n_queries": 1000,
+      "incumbent_mrr25": 0.574,
+      "incumbent_r1": 0.42,
+      "incumbent_r5": 0.767,
+      "incumbent_r25": 0.952,
+      "full_rerank_mrr25": 0.8149,
+      "full_rerank_r1": 0.718,
+      "full_rerank_r5": 0.938,
+      "full_rerank_r25": 0.977,
+      "gated_mrr25": 0.8147,
+      "gated_r1": 0.718,
+      "gated_r5": 0.938,
+      "gated_r25": 0.977,
+      "rank1_swaps": 504,
+      "lib_locked": 1,
+      "promotions_correct": 323,
+      "demotions_incorrect": 25,
+      "ci_full_vs_incumbent": {
+        "mean_delta": 0.2409,
+        "ci_low": 0.2198,
+        "ci_high": 0.2632,
+        "p_win": 1.0
+      },
+      "ci_gated_vs_incumbent": {
+        "mean_delta": 0.2407,
+        "ci_low": 0.2196,
+        "ci_high": 0.2631,
+        "p_win": 1.0
+      }
+    }
+  },
+  "top_20_lgb_features": {
+    "freq_tan": 655.8,
+    "analog_top_gap": 550.4,
+    "neural_top_gap": 525.4,
+    "frag_top_gap": 464.8,
+    "neural_fp": 409.8,
+    "v44_lib_prob": 379.6,
+    "neural_std": 361.2,
+    "frag_rr": 328.6,
+    "neural_z": 317.8,
+    "frag_z": 274.6,
+    "cand_lib_mass_err_ppm": 260.8,
+    "neural_rr": 255.2,
+    "abs_rank_diff_neural_analog": 236.0,
+    "analog_rr": 232.8,
+    "analog_tan": 225.0,
+    "cand_lib_margin_entropy": 211.8,
+    "rare_analog_tan_z": 192.0,
+    "rare_analog_tan": 186.4,
+    "analog_tan_z": 185.2,
+    "frag_score": 184.4
+  },
+  "elapsed_seconds": 197.19
+}
