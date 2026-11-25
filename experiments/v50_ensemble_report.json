@@ -1,0 +1,180 @@
+{
+  "timestamp_utc": "2026-11-25T18:32:05Z",
+  "candidates": [
+    {
+      "tag": "V50_3Model_Base42",
+      "n_features": 42,
+      "weights": {
+        "lgb": 0.5,
+        "cb": 0.5,
+        "hgb": 0.0,
+        "delta_thr": 0.0
+      },
+      "oof": {
+        "n": 1476,
+        "incumbent_mrr25": 0.6217,
+        "full_mrr25": 0.848,
+        "gated_mrr25": 0.8478,
+        "gated_r1": 0.7683,
+        "gated_r5": 0.9478,
+        "gated_r25": 0.9831,
+        "promotions_correct": 474,
+        "demotions_incorrect": 43,
+        "rank1_swaps": 692,
+        "lib_locked": 135,
+        "mean_delta_vs_inc": 0.2261,
+        "ci95_vs_inc": [
+          0.2093,
+          0.2451
+        ],
+        "p_win_vs_inc": 1.0
+      },
+      "np_b": {
+        "n": 250,
+        "incumbent_mrr25": 0.2871,
+        "full_mrr25": 0.4466,
+        "gated_mrr25": 0.4466,
+        "gated_r1": 0.296,
+        "gated_r5": 0.62,
+        "gated_r25": 0.868,
+        "promotions_correct": 47,
+        "demotions_incorrect": 10,
+        "rank1_swaps": 177,
+        "lib_locked": 3,
+        "mean_delta_vs_inc": 0.1596,
+        "ci95_vs_inc": [
+          0.1179,
+          0.2009
+        ],
+        "p_win_vs_inc": 1.0
+      },
+      "np_mix": {
+        "n": 250,
+        "incumbent_mrr25": 0.2871,
+        "full_mrr25": 0.5572,
+        "gated_mrr25": 0.5572,
+        "gated_r1": 0.432,
+        "gated_r5": 0.704,
+        "gated_r25": 0.888,
+        "promotions_correct": 78,
+        "demotions_incorrect": 7,
+        "rank1_swaps": 184,
+        "lib_locked": 9,
+        "mean_delta_vs_inc": 0.2701,
+        "ci95_vs_inc": [
+          0.2233,
+          0.3194
+        ],
+        "p_win_vs_inc": 1.0
+      },
+      "th": {
+        "n": 1000,
+        "incumbent_mrr25": 0.574,
+        "full_mrr25": 0.8154,
+        "gated_mrr25": 0.8152,
+        "gated_r1": 0.719,
+        "gated_r5": 0.939,
+        "gated_r25": 0.977,
+        "promotions_correct": 324,
+        "demotions_incorrect": 25,
+        "rank1_swaps": 504,
+        "lib_locked": 1,
+        "mean_delta_vs_inc": 0.2412,
+        "ci95_vs_inc": [
+          0.22,
+          0.2636
+        ],
+        "p_win_vs_inc": 1.0
+      }
+    },
+    {
+      "tag": "V50_3Model_Plus_CE_MultiAdd",
+      "n_features": 46,
+      "weights": {
+        "lgb": 0.5,
+        "cb": 0.5,
+        "hgb": 0.0,
+        "delta_thr": 0.0
+      },
+      "oof": {
+        "n": 1476,
+        "incumbent_mrr25": 0.6217,
+        "full_mrr25": 0.8511,
+        "gated_mrr25": 0.8509,
+        "gated_r1": 0.7744,
+        "gated_r5": 0.9444,
+        "gated_r25": 0.9837,
+        "promotions_correct": 477,
+        "demotions_incorrect": 37,
+        "rank1_swaps": 686,
+        "lib_locked": 135,
+        "mean_delta_vs_inc": 0.2292,
+        "ci95_vs_inc": [
+          0.2122,
+          0.2483
+        ],
+        "p_win_vs_inc": 1.0
+      },
+      "np_b": {
+        "n": 250,
+        "incumbent_mrr25": 0.2871,
+        "full_mrr25": 0.446,
+        "gated_mrr25": 0.446,
+        "gated_r1": 0.288,
+        "gated_r5": 0.628,
+        "gated_r25": 0.872,
+        "promotions_correct": 45,
+        "demotions_incorrect": 10,
+        "rank1_swaps": 178,
+        "lib_locked": 3,
+        "mean_delta_vs_inc": 0.159,
+        "ci95_vs_inc": [
+          0.1165,
+          0.2
+        ],
+        "p_win_vs_inc": 1.0
+      },
+      "np_mix": {
+        "n": 250,
+        "incumbent_mrr25": 0.2871,
+        "full_mrr25": 0.5453,
+        "gated_mrr25": 0.5453,
+        "gated_r1": 0.412,
+        "gated_r5": 0.696,
+        "gated_r25": 0.888,
+        "promotions_correct": 73,
+        "demotions_incorrect": 7,
+        "rank1_swaps": 184,
+        "lib_locked": 9,
+        "mean_delta_vs_inc": 0.2582,
+        "ci95_vs_inc": [
+          0.2124,
+          0.3066
+        ],
+        "p_win_vs_inc": 1.0
+      },
+      "th": {
+        "n": 1000,
+        "incumbent_mrr25": 0.574,
+        "full_mrr25": 0.8136,
+        "gated_mrr25": 0.8135,
+        "gated_r1": 0.717,
+        "gated_r5": 0.94,
+        "gated_r25": 0.977,
+        "promotions_correct": 322,
+        "demotions_incorrect": 25,
+        "rank1_swaps": 505,
+        "lib_locked": 1,
+        "mean_delta_vs_inc": 0.2394,
+        "ci95_vs_inc": [
+          0.218,
+          0.2627
+        ],
+        "p_win_vs_inc": 1.0
+      }
+    }
+  ],
+  "selected": "V50_3Model_Base42",
+  "compact_lgb_zlib_bytes": 1662523,
+  "elapsed_seconds": 370.54
+}
