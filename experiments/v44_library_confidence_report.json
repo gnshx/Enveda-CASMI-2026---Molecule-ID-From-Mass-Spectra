@@ -1,0 +1,83 @@
+{
+  "timestamp_utc": "2026-11-25T14:30:25Z",
+  "oof_train_cv": {
+    "oof_auc": 0.9594,
+    "oof_brier": 0.0076,
+    "oof_logloss": 0.0324
+  },
+  "feature_importances": {
+    "cand_lib_present": 20.4,
+    "cand_lib_mod_cos": 317.2,
+    "cand_lib_entropy_sim": 201.8,
+    "cand_lib_shared_peaks": 185.2,
+    "cand_lib_explained_int": 196.0,
+    "cand_lib_log_n_refs": 76.2,
+    "cand_lib_mass_err_ppm": 693.4,
+    "cand_lib_margin_cos": 294.8,
+    "cand_lib_margin_entropy": 427.6,
+    "cand_lib_max_other_cos": 387.4
+  },
+  "np_examples_mixed_50A_50B": {
+    "n_queries": 250,
+    "mass_only_mrr25": 0.2077,
+    "naive_libmax_mrr25": 0.4394,
+    "v44_mrr25": 0.4579,
+    "v44_r1": 0.36,
+    "v44_r5": 0.564,
+    "v44_r25": 0.796,
+    "naive_libmax_gate_0.87": {
+      "locked": 36,
+      "correct": 23,
+      "precision": 0.6389,
+      "false_locks_on_regime_b": 8
+    },
+    "v44_cand_gate_0.50": {
+      "locked": 121,
+      "correct": 59,
+      "precision": 0.4876,
+      "false_locks_on_regime_b": 43
+    },
+    "paired_bootstrap_v44_vs_libmax": {
+      "baseline_mrr": 0.4394,
+      "challenger_mrr": 0.4579,
+      "mean_delta": 0.0185,
+      "ci_low": 0.0021,
+      "ci_high": 0.0356,
+      "p_win": 0.9885
+    },
+    "cand_auc": 0.8339,
+    "cand_brier": 0.0096
+  },
+  "np_examples_pure_regime_a": {
+    "n_queries": 250,
+    "mass_only_mrr25": 0.2077,
+    "naive_libmax_mrr25": 0.7694,
+    "v44_mrr25": 0.776,
+    "v44_r1": 0.688,
+    "v44_r5": 0.888,
+    "v44_r25": 0.94,
+    "naive_libmax_gate_0.87": {
+      "locked": 70,
+      "correct": 59,
+      "precision": 0.8429,
+      "false_locks_on_regime_b": 0
+    },
+    "v44_cand_gate_0.50": {
+      "locked": 172,
+      "correct": 133,
+      "precision": 0.7733,
+      "false_locks_on_regime_b": 0
+    },
+    "paired_bootstrap_v44_vs_libmax": {
+      "baseline_mrr": 0.7694,
+      "challenger_mrr": 0.776,
+      "mean_delta": 0.0066,
+      "ci_low": -0.0079,
+      "ci_high": 0.0219,
+      "p_win": 0.7945
+    },
+    "cand_auc": 0.9648,
+    "cand_brier": 0.0052
+  },
+  "elapsed_seconds": 49.47
+}
