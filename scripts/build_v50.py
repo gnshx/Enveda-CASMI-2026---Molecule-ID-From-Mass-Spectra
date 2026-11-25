@@ -114,18 +114,24 @@ def train_kaggle_schema_challenger() -> dict:
     return payload
 
 
-def build_v50() -> Path:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
-    payload = train_kaggle_schema_challenger()
-    payload_b64 = base64.b64encode(zlib.compress(json.dumps(payload).encode("utf-8"), level=9)).decode("ascii")
+def build_v50_variant(
+    out_dir: Path,
+    payload: dict,
+    title_line: str,
+    beta: float,
+    gate_delta_min: float,
+) -> Path:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    var_payload = dict(payload, beta=beta, gate_delta_min=gate_delta_min)
+    payload_b64 = base64.b64encode(zlib.compress(json.dumps(var_payload).encode("utf-8"), level=9)).decode("ascii")
 
     nb = json.loads((BASE_DIR / "casmi26-v4n-engine-fusion-union-lb-0-399.ipynb").read_text(encoding="utf-8"))
     meta = json.loads((BASE_DIR / "kernel-metadata.json").read_text(encoding="utf-8"))
 
     nb["cells"][0]["source"] = [
-        "# CASMI26 V50 | Calibrated Multi-Engine Ensemble + Candidate-Aware Rank-1 Gate\n",
+        f"{title_line}\n",
         "\n",
-        "**Version 50**: Preserves the exact V24 (`0.4800` PB) control while replacing blind query-level `LIB_MAX` gating with candidate-aware confidence + calibrated LightGBM/HGB Rank-1 Challenger residual scoring (`beta=0.20`, `gate_delta_min=0.35`) and full per-stage SHA-256 execution auditing.\n",
+        f"**{out_dir.name}**: Preserves the exact V24 (`0.4800` PB) control while replacing blind query-level `LIB_MAX` gating with candidate-aware confidence + calibrated LightGBM/HGB Rank-1 Challenger residual scoring (`beta={beta}`, `gate_delta_min={gate_delta_min}`) and full per-stage SHA-256 execution auditing.\n",
     ]
 
     # Inject V50 calibrated challenger hook right before final submission write in Cell 17
@@ -234,11 +240,25 @@ except Exception as _v50_exc:
         if cell["cell_type"] == "code":
             ast.parse("".join(cell["source"]))
 
-    nb_out = OUT_DIR / "casmi26-v4n-engine-fusion-union-lb-0-399.ipynb"
+    nb_out = out_dir / "casmi26-v4n-engine-fusion-union-lb-0-399.ipynb"
     nb_out.write_text(json.dumps(nb, indent=1), encoding="utf-8")
-    (OUT_DIR / "kernel-metadata.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    (out_dir / "kernel-metadata.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
     print(f"Built {nb_out} ({nb_out.stat().st_size:,} bytes) — all cells AST-verified.")
     return nb_out
+
+
+def build_v50() -> Path:
+    payload = train_kaggle_schema_challenger()
+    variants = [
+        (ROOT / "deploy_kernel_v50", "# CASMI26 V50 | Calibrated Multi-Engine Ensemble + Candidate-Aware Rank-1 Gate", 0.20, 0.35),
+        (ROOT / "deploy_kernel_v50b", "# CASMI26 V50b | Conservative Rank-1 Challenger Gate (beta=0.15, delta=0.60)", 0.15, 0.60),
+        (ROOT / "deploy_kernel_v50c", "# CASMI26 V50c | Bold Rank-1 Challenger Gate (beta=0.25, delta=0.15)", 0.25, 0.15),
+        (ROOT / "deploy_kernel_v50d", "# CASMI26 V50d | Ranks 2-25 Calibrated V50 Rerank + Strict Rank-1 Lock", 0.20, 99.0),
+    ]
+    last_out = None
+    for out_dir, title_line, beta, delta in variants:
+        last_out = build_v50_variant(out_dir, payload, title_line, beta, delta)
+    return last_out
 
 
 if __name__ == "__main__":
