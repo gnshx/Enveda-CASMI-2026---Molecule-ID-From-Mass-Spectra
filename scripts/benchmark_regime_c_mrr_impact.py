@@ -26,7 +26,7 @@ from rdkit.Chem import rdMolDescriptors
 
 RDLogger.DisableLog("rdApp.*")
 
-ROOT = Path("/home/dlcv/Enveda-CASMI-2026")
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "research_kernels/rajrajak99/output"))
 
@@ -114,14 +114,40 @@ def main():
     tested_queries = 0
     regio_success_count = 0
 
+    all_pool_entries = [
+        (ik, info["formula"], info["smiles"])
+        for ik, info in queries.items()
+    ]
+
     for ik14, q_info in list(queries.items())[:80]:
-        true_smi = q_info['smiles']
         formula = q_info['formula']
         specs = q_info['spectra']
         pooled = pool_multice_spectra(specs)
 
-        # Generate regioisomers from true molecule
-        isomers = generate_constitutional_isomers(true_smi, max_variants=20)
+        # Blind analog seeds: same-formula structures in the pool OTHER than the ground-truth ik14.
+        # Never inject true_smi or generate constitutional isomers directly from true_smi.
+        analog_seeds = [
+            smi for cand_ik, cand_form, smi in all_pool_entries
+            if cand_ik != ik14 and cand_form == formula
+        ]
+        if not analog_seeds:
+            continue
+
+        isomers = []
+        seen_isomer_keys: Set[str] = set()
+        for seed_smi in analog_seeds[:5]:
+            for var_smi in generate_constitutional_isomers(
+                seed_smi, max_variants=10, existing_keys=seen_isomer_keys
+            ):
+                vk = to_canonical_inchikey14(var_smi)
+                if vk and vk not in seen_isomer_keys:
+                    seen_isomer_keys.add(vk)
+                    isomers.append(var_smi)
+                if len(isomers) >= 20:
+                    break
+            if len(isomers) >= 20:
+                break
+
         if len(isomers) < 3:
             continue
 
@@ -129,22 +155,17 @@ def main():
         mid = f"mol_{tested_queries:03d}_{ik14}"
         ground_truth[mid] = ik14
 
-        # Simulate depleted retrieval:
-        # In a depleted candidate pool of K=5 candidates:
-        # Decoys occupy slots 0..4 (representing distant database analogs)
-        # The true molecule is absent from initial slots (representing Regime C unindexed novel natural product)
-        decoys = [s for s in isomers if to_canonical_inchikey14(s) != ik14][:5]
-        while len(decoys) < 5:
-            decoys.append("CC(=O)O") # dummy padding
-
-        initial_k5 = list(decoys[:5])
+        # Simulated depleted retrieval pool of K=5 retrieved analogs (ground truth absent)
+        initial_k5 = list(analog_seeds[:5])
+        while len(initial_k5) < 5:
+            initial_k5.append(isomers[len(initial_k5) % len(isomers)])
 
         # Strategy 1: Truncated Baseline (slots 6..25 empty)
         s1_list = [to_canonical_inchikey14(s) or s for s in initial_k5]
         preds_s1[mid] = s1_list
 
-        # Strategy 2a: Generic Decoy Backfill (slots 6..25 filled with decoys only, no true isomer)
-        generic_decoys = [s for s in isomers if to_canonical_inchikey14(s) != ik14][5:25]
+        # Strategy 2a: Generic Decoy Backfill (remaining retrieved analogs, no de novo isomers)
+        generic_decoys = analog_seeds[5:25]
         s2a_list, _ = admit_candidates_safely(
             existing_candidates=initial_k5,
             candidate_pool=generic_decoys,
@@ -153,8 +174,8 @@ def main():
         )
         preds_s2a[mid] = [to_canonical_inchikey14(s) or s for s in s2a_list[:25]]
 
-        # Candidate pool including true isomer and generated regioisomers
-        candidate_pool = [true_smi] + isomers
+        # Blind candidate pool generated strictly from retrieved analog seeds (no oracle true_smi)
+        candidate_pool = list(isomers)
 
         # Strategy 2b: Unscored Regioisomers Backfill (arbitrary/unscored order backfill into slots 6..25)
         # Randomize / reverse order so true isomer is arbitrarily distributed

@@ -21,7 +21,7 @@ import pyarrow.parquet as pq
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 
-ROOT = Path("/home/dlcv/Enveda-CASMI-2026")
+ROOT = Path(__file__).resolve().parent.parent
 PUBCHEM_PATH = ROOT / "data" / "references" / "pubchem_10m.parquet"
 EXISTING_DB_PATH = ROOT / "candidates" / "candidate_db.parquet"
 TEST_PATH = ROOT / "data" / "test.parquet"
@@ -83,7 +83,7 @@ def is_mass_in_intervals(mass: float) -> bool:
 def process_smiles_batch(smiles_chunk: List[str]) -> List[Tuple[str, str, float]]:
     hits = []
     for smi in smiles_chunk:
-        if len(smi) < 12 or len(smi) > 100:
+        if not isinstance(smi, str) or not smi.strip():
             continue
         try:
             m = Chem.MolFromSmiles(smi)
