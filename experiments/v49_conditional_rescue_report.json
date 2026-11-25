@@ -1,0 +1,31 @@
+{
+  "timestamp_utc": "2026-11-25T18:17:36Z",
+  "n_queries": 250,
+  "missing_from_pool_queries": 15,
+  "triggered_low_conf_queries": 67,
+  "variants_generated_total": 751,
+  "blind_missing_recovered": 0,
+  "baseline_mrr25": 0.4495,
+  "baseline_r25": 0.868,
+  "empty_slot_rescue_mrr25": 0.4495,
+  "empty_slot_rescue_r25": 0.868,
+  "tail20_rescue_mrr25": 0.4493,
+  "tail20_rescue_r25": 0.864,
+  "ci_empty_vs_base": {
+    "baseline_mrr": 0.4495,
+    "challenger_mrr": 0.4495,
+    "mean_delta": 0.0,
+    "ci_low": 0.0,
+    "ci_high": 0.0,
+    "p_win": 0.0
+  },
+  "ci_tail20_vs_base": {
+    "baseline_mrr": 0.4495,
+    "challenger_mrr": 0.4493,
+    "mean_delta": -0.0002,
+    "ci_low": -0.0005,
+    "ci_high": 0.0,
+    "p_win": 0.0
+  },
+  "elapsed_seconds": 250.72
+}
