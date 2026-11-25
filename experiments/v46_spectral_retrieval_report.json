@@ -1,0 +1,55 @@
+{
+  "train_info": {
+    "best_fold4_tanimoto_rmse": 0.088
+  },
+  "np_b": {
+    "n": 250,
+    "binned_analog_mrr25": 0.4745,
+    "v46_emb_analog_mrr25": 0.2205,
+    "v46_emb_r1": 0.112,
+    "v46_emb_r5": 0.336,
+    "v46_emb_r25": 0.652,
+    "blend_analog_plus_v46_mrr25": 0.4035,
+    "ci_v46_vs_binned": {
+      "baseline_mrr": 0.4745,
+      "challenger_mrr": 0.2205,
+      "mean_delta": -0.254,
+      "ci_low": -0.3027,
+      "ci_high": -0.2058,
+      "p_win": 0.0
+    },
+    "ci_blend_vs_binned": {
+      "baseline_mrr": 0.4745,
+      "challenger_mrr": 0.4035,
+      "mean_delta": -0.071,
+      "ci_low": -0.0987,
+      "ci_high": -0.0443,
+      "p_win": 0.0
+    }
+  },
+  "th": {
+    "n": 1000,
+    "binned_analog_mrr25": 0.5602,
+    "v46_emb_analog_mrr25": 0.3502,
+    "v46_emb_r1": 0.23,
+    "v46_emb_r5": 0.492,
+    "v46_emb_r25": 0.734,
+    "blend_analog_plus_v46_mrr25": 0.5526,
+    "ci_v46_vs_binned": {
+      "baseline_mrr": 0.5602,
+      "challenger_mrr": 0.3502,
+      "mean_delta": -0.21,
+      "ci_low": -0.2371,
+      "ci_high": -0.1831,
+      "p_win": 0.0
+    },
+    "ci_blend_vs_binned": {
+      "baseline_mrr": 0.5602,
+      "challenger_mrr": 0.5526,
+      "mean_delta": -0.0077,
+      "ci_low": -0.0222,
+      "ci_high": 0.0074,
+      "p_win": 0.1695
+    }
+  }
+}
