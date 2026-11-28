@@ -11,12 +11,12 @@ Survives AGY closing, network disconnects, and process restarts:
     `active` pushed runs so a running kernel is resumed instead of re-pushed
   - Respects 5/day UTC submission quota (sleeps until UTC rollover when 0/5)
 
-Queue (Best 5 Staged Versions):
-  1. deploy_kernel_v50  : V50 Selected Calibrated Ensemble (beta=0.20, delta=0.35)
+Queue (Best Staged Versions):
+  1. deploy_kernel_v50  : V50 Selected Calibrated Ensemble (beta=0.20, delta=0.35) [scored 0.463]
   2. deploy_kernel_v50b : V50b Conservative Gate (beta=0.15, delta=0.60)
   3. deploy_kernel_v50d : V50d Ranks 2-25 Calibrated + Strict Rank-1 Lock
-  4. deploy_kernel_v50c : V50c Bold Gate (beta=0.25, delta=0.15)
-  5. deploy_kernel_v42  : V42 Audited Exact V24 0.4800 PB Control
+  4. deploy_kernel_v42  : V42 Audited Exact V24 0.4800 PB Control
+  (Removed v50c bold gate beta=0.25, delta=0.15 after v50 scored 0.463 vs 0.480 control)
 =============================================================================
 """
 
@@ -52,11 +52,6 @@ QUEUE = [
         "tag": "v50d",
         "dir": str(ROOT / "deploy_kernel_v50d"),
         "label": "Version 50d: Ranks 2-25 Calibrated V50 + Strict Rank-1 Lock",
-    },
-    {
-        "tag": "v50c",
-        "dir": str(ROOT / "deploy_kernel_v50c"),
-        "label": "Version 50c: Bold Rank-1 Challenger Gate (beta=0.25, delta=0.15)",
     },
     {
         "tag": "v42",
